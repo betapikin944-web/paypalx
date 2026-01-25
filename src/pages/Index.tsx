@@ -33,7 +33,7 @@ const Index = () => {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="pt-4"
+        className="pt-6"
       >
         <BalanceCard balance={balanceAmount} />
       </motion.div>
