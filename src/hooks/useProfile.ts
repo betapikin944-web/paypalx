@@ -9,6 +9,7 @@ export interface Profile {
   display_name: string | null;
   avatar_url: string | null;
   phone_number: string | null;
+  email: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -74,7 +75,7 @@ export function useSearchProfiles(searchTerm: string) {
         .from('profiles')
         .select('*')
         .neq('user_id', user?.id)
-        .or(`display_name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%`)
+        .or(`display_name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
         .limit(10);
 
       if (error) throw error;
