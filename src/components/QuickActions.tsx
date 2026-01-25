@@ -3,10 +3,10 @@ import { Send, Download, QrCode, CreditCard } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const actions = [
-  { icon: Send, label: "Send", path: "/send", color: "bg-primary" },
-  { icon: Download, label: "Request", path: "/request", color: "bg-emerald-500" },
-  { icon: QrCode, label: "Scan", path: "/scan", color: "bg-violet-500" },
-  { icon: CreditCard, label: "Pay", path: "/pay", color: "bg-amber-500" },
+  { icon: Send, label: "Send", path: "/send", color: "bg-[#003087]" },
+  { icon: Download, label: "Request", path: "/request", color: "bg-[#0070BA]" },
+  { icon: QrCode, label: "Scan", path: "/scan", color: "bg-[#142C8E]" },
+  { icon: CreditCard, label: "Pay", path: "/pay", color: "bg-[#009CDE]" },
 ];
 
 export function QuickActions() {
