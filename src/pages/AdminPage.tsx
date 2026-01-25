@@ -132,7 +132,7 @@ const AdminPage = () => {
   const getUserName = (userId: string | null) => {
     if (!userId) return 'System';
     const user = users?.find(u => u.user_id === userId);
-    return user?.display_name || userId.slice(0, 8) + '...';
+    return user?.display_name || user?.email || userId.slice(0, 8) + '...';
   };
 
   return (
@@ -218,10 +218,10 @@ const AdminPage = () => {
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">
-                            {user.display_name || 'Unnamed User'}
+                            {user.display_name || user.email || 'Unnamed User'}
                           </p>
                           <p className="text-sm text-muted-foreground truncate">
-                            {user.phone_number || user.user_id.slice(0, 8) + '...'}
+                            {user.email || user.phone_number || user.user_id.slice(0, 8) + '...'}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             Joined {format(new Date(user.created_at), 'MMM d, yyyy')}
