@@ -4,69 +4,69 @@
 
 @layer base {
   :root {
-    --background: 0 0% 4%;
-    --foreground: 0 0% 98%;
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
 
-    --card: 0 0% 8%;
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
 
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 138 100% 42%;
-    --primary-foreground: 0 0% 0%;
+    --primary: 214 100% 34%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 14%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 55%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 138 100% 42%;
-    --accent-foreground: 0 0% 0%;
+    --accent: 199 89% 48%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --success: 138 100% 42%;
-    --success-foreground: 0 0% 0%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
 
-    --border: 0 0% 16%;
-    --input: 0 0% 16%;
-    --ring: 138 100% 42%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 214 100% 34%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 6%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 138 100% 42%;
-    --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 0 0% 12%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 16%;
-    --sidebar-ring: 138 100% 42%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 214 100% 34%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 214 100% 34%;
   }
 
   .dark {
-    --background: 0 0% 4%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 8%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 138 100% 42%;
-    --primary-foreground: 0 0% 0%;
-    --secondary: 0 0% 14%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 55%;
-    --accent: 138 100% 42%;
-    --accent-foreground: 0 0% 0%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 16%;
-    --input: 0 0% 16%;
-    --ring: 138 100% 42%;
+    --background: 222 47% 11%;
+    --foreground: 210 20% 98%;
+    --card: 223 47% 14%;
+    --card-foreground: 210 20% 98%;
+    --popover: 223 47% 14%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 199 89% 48%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 217 33% 22%;
+    --input: 217 33% 22%;
+    --ring: 199 89% 48%;
   }
 }
 
@@ -77,44 +77,44 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+    font-family: 'PayPal Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   }
 }
 
 @layer utilities {
   .glass-card {
-    @apply bg-card/80 backdrop-blur-xl border border-border/50;
+    @apply bg-card border border-border shadow-sm;
   }
 
   .gradient-primary {
-    background: linear-gradient(135deg, hsl(138 100% 42%) 0%, hsl(160 100% 35%) 100%);
+    background: linear-gradient(135deg, hsl(214 100% 34%) 0%, hsl(199 89% 48%) 100%);
   }
 
-  .gradient-dark {
-    background: linear-gradient(180deg, hsl(0 0% 8%) 0%, hsl(0 0% 4%) 100%);
+  .gradient-light {
+    background: linear-gradient(180deg, hsl(210 40% 98%) 0%, hsl(210 40% 96%) 100%);
   }
 
   .text-gradient {
     @apply bg-clip-text text-transparent;
-    background: linear-gradient(135deg, hsl(138 100% 50%) 0%, hsl(160 100% 45%) 100%);
+    background: linear-gradient(135deg, hsl(214 100% 34%) 0%, hsl(199 89% 48%) 100%);
   }
 
-  .glow-primary {
-    box-shadow: 0 0 40px -10px hsl(138 100% 42% / 0.5);
+  .shadow-paypal {
+    box-shadow: 0 2px 8px -2px hsl(214 100% 34% / 0.15);
   }
 
-  .glow-sm {
-    box-shadow: 0 0 20px -5px hsl(138 100% 42% / 0.3);
+  .shadow-card {
+    box-shadow: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
   }
 }
 
 @layer components {
   .balance-display {
-    @apply text-5xl md:text-6xl font-bold tracking-tight;
+    @apply text-4xl md:text-5xl font-bold tracking-tight text-foreground;
   }
 
   .action-button {
-    @apply flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-200 active:scale-95;
+    @apply flex flex-col items-center gap-2 p-3 rounded-xl transition-all duration-200 active:scale-95;
   }
 
   .nav-item {
@@ -127,5 +127,17 @@
 
   .transaction-item {
     @apply flex items-center gap-4 p-4 rounded-xl transition-colors hover:bg-muted/50;
+  }
+
+  .paypal-button {
+    @apply inline-flex items-center justify-center rounded-full font-semibold transition-all duration-200;
+  }
+
+  .paypal-button-primary {
+    @apply paypal-button bg-primary text-primary-foreground hover:opacity-90 shadow-paypal;
+  }
+
+  .paypal-button-secondary {
+    @apply paypal-button bg-secondary text-secondary-foreground hover:bg-muted;
   }
 }
