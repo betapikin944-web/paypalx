@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Users, DollarSign, ArrowUpDown, Search, Edit2, Check, X } from 'lucide-react';
+import { ArrowLeft, Users, DollarSign, ArrowUpDown, Search, Edit2, Check, X, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { useAllUsers, useAllTransactions } from '@/hooks/useAdmin';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { useAllUsers, useAllTransactions, useIsAdmin } from '@/hooks/useAdmin';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -15,6 +18,7 @@ import { format } from 'date-fns';
 
 const AdminPage = () => {
   const navigate = useNavigate();
+  const { user: adminUser } = useAuth();
   const { data: users, isLoading: usersLoading } = useAllUsers();
   const { data: transactions, isLoading: transactionsLoading } = useAllTransactions();
   const queryClient = useQueryClient();
@@ -22,11 +26,23 @@ const AdminPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editBalance, setEditBalance] = useState('');
+  
+  // Add funds modal state
+  const [addFundsModal, setAddFundsModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<{ user_id: string; display_name: string | null; balance: number } | null>(null);
+  const [addAmount, setAddAmount] = useState('');
+  const [addDescription, setAddDescription] = useState('');
+  const [isAddingFunds, setIsAddingFunds] = useState(false);
 
-  const filteredUsers = users?.filter(user => 
-    user.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.phone_number?.includes(searchTerm)
-  );
+  // Filter users - handle null values properly
+  const filteredUsers = users?.filter(user => {
+    if (!searchTerm.trim()) return true;
+    const search = searchTerm.toLowerCase();
+    const name = user.display_name?.toLowerCase() || '';
+    const phone = user.phone_number || '';
+    const id = user.user_id.toLowerCase();
+    return name.includes(search) || phone.includes(search) || id.includes(search);
+  });
 
   const handleEditBalance = (userId: string, currentBalance: number) => {
     setEditingUserId(userId);
@@ -55,9 +71,69 @@ const AdminPage = () => {
     setEditingUserId(null);
   };
 
+  const openAddFundsModal = (user: { user_id: string; display_name: string | null; balance: number }) => {
+    setSelectedUser(user);
+    setAddAmount('');
+    setAddDescription('Admin deposit');
+    setAddFundsModal(true);
+  };
+
+  const handleAddFunds = async () => {
+    if (!selectedUser || !adminUser) return;
+    
+    const amount = parseFloat(addAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid amount greater than 0');
+      return;
+    }
+
+    setIsAddingFunds(true);
+    try {
+      // Update user balance
+      const newBalance = selectedUser.balance + amount;
+      const { error: balanceError } = await supabase
+        .from('balances')
+        .update({ amount: newBalance })
+        .eq('user_id', selectedUser.user_id);
+
+      if (balanceError) throw balanceError;
+
+      // Create transaction record (admin as sender, user as recipient)
+      const { error: transactionError } = await supabase
+        .from('transactions')
+        .insert({
+          sender_id: adminUser.id,
+          recipient_id: selectedUser.user_id,
+          amount: amount,
+          description: addDescription || 'Admin deposit',
+          status: 'completed',
+          currency: 'USD'
+        });
+
+      if (transactionError) throw transactionError;
+
+      toast.success(`Successfully added $${amount.toFixed(2)} to ${selectedUser.display_name || 'user'}'s account`);
+      queryClient.invalidateQueries({ queryKey: ['allUsers'] });
+      queryClient.invalidateQueries({ queryKey: ['allTransactions'] });
+      setAddFundsModal(false);
+    } catch (error) {
+      console.error('Error adding funds:', error);
+      toast.error('Failed to add funds');
+    } finally {
+      setIsAddingFunds(false);
+    }
+  };
+
   const totalBalance = users?.reduce((sum, user) => sum + (user.balance || 0), 0) || 0;
   const totalTransactions = transactions?.length || 0;
   const totalVolume = transactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
+
+  // Get user display name for transactions
+  const getUserName = (userId: string | null) => {
+    if (!userId) return 'System';
+    const user = users?.find(u => u.user_id === userId);
+    return user?.display_name || userId.slice(0, 8) + '...';
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -88,14 +164,14 @@ const AdminPage = () => {
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
-              <DollarSign className="h-6 w-6 mx-auto text-green-600 mb-2" />
+              <DollarSign className="h-6 w-6 mx-auto text-emerald-600 mb-2" />
               <p className="text-2xl font-bold">${totalBalance.toFixed(0)}</p>
               <p className="text-xs text-muted-foreground">Total Balance</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
-              <ArrowUpDown className="h-6 w-6 mx-auto text-blue-600 mb-2" />
+              <ArrowUpDown className="h-6 w-6 mx-auto text-primary mb-2" />
               <p className="text-2xl font-bold">{totalTransactions}</p>
               <p className="text-xs text-muted-foreground">Transactions</p>
             </CardContent>
@@ -126,9 +202,11 @@ const AdminPage = () => {
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
               </div>
+            ) : !filteredUsers || filteredUsers.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No users found</p>
             ) : (
               <div className="space-y-3">
-                {filteredUsers?.map((user) => (
+                {filteredUsers.map((user) => (
                   <Card key={user.id}>
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
@@ -143,7 +221,7 @@ const AdminPage = () => {
                             {user.display_name || 'Unnamed User'}
                           </p>
                           <p className="text-sm text-muted-foreground truncate">
-                            {user.phone_number || 'No phone'}
+                            {user.phone_number || user.user_id.slice(0, 8) + '...'}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             Joined {format(new Date(user.created_at), 'MMM d, yyyy')}
@@ -162,7 +240,7 @@ const AdminPage = () => {
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                className="h-8 w-8 text-green-600"
+                                className="h-8 w-8 text-emerald-600"
                                 onClick={() => handleSaveBalance(user.user_id)}
                               >
                                 <Check className="h-4 w-4" />
@@ -186,14 +264,26 @@ const AdminPage = () => {
                                   {user.currency}
                                 </Badge>
                               </div>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8"
-                                onClick={() => handleEditBalance(user.user_id, user.balance)}
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
+                              <div className="flex flex-col gap-1">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-emerald-600"
+                                  onClick={() => openAddFundsModal(user)}
+                                  title="Add Funds"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8"
+                                  onClick={() => handleEditBalance(user.user_id, user.balance)}
+                                  title="Edit Balance"
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -201,9 +291,6 @@ const AdminPage = () => {
                     </CardContent>
                   </Card>
                 ))}
-                {filteredUsers?.length === 0 && (
-                  <p className="text-center text-muted-foreground py-8">No users found</p>
-                )}
               </div>
             )}
           </TabsContent>
@@ -221,11 +308,11 @@ const AdminPage = () => {
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                   </div>
-                ) : transactions?.length === 0 ? (
+                ) : !transactions || transactions.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">No transactions yet</p>
                 ) : (
                   <div className="space-y-3">
-                    {transactions?.map((transaction) => (
+                    {transactions.map((transaction) => (
                       <div 
                         key={transaction.id} 
                         className="flex items-center justify-between py-3 border-b last:border-0"
@@ -233,6 +320,9 @@ const AdminPage = () => {
                         <div className="flex-1">
                           <p className="font-medium text-sm">
                             {transaction.description || 'Transfer'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            From: {getUserName(transaction.sender_id)} → To: {getUserName(transaction.recipient_id)}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {format(new Date(transaction.created_at), 'MMM d, yyyy h:mm a')}
@@ -260,6 +350,59 @@ const AdminPage = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Add Funds Dialog */}
+      <Dialog open={addFundsModal} onOpenChange={setAddFundsModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Funds</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+              <Avatar className="h-10 w-10">
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {selectedUser?.display_name?.charAt(0)?.toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-medium">{selectedUser?.display_name || 'Unnamed User'}</p>
+                <p className="text-sm text-muted-foreground">
+                  Current balance: ${selectedUser?.balance?.toFixed(2)}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount to Add ($)</Label>
+              <Input
+                id="amount"
+                type="number"
+                placeholder="0.00"
+                value={addAmount}
+                onChange={(e) => setAddAmount(e.target.value)}
+                min="0"
+                step="0.01"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                placeholder="Admin deposit"
+                value={addDescription}
+                onChange={(e) => setAddDescription(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddFundsModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddFunds} disabled={isAddingFunds}>
+              {isAddingFunds ? 'Adding...' : 'Add Funds'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
