@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Search, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Search, X, Loader2, Check } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
@@ -7,13 +7,15 @@ import { Input } from "./ui/input";
 import { useSearchProfiles, Profile } from "@/hooks/useProfile";
 import { useSendMoney } from "@/hooks/useTransactions";
 import { useBalance } from "@/hooks/useBalance";
+import { Receipt } from "./Receipt";
 
 export function SendMoney() {
   const navigate = useNavigate();
   const [amount, setAmount] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContact, setSelectedContact] = useState<Profile | null>(null);
-  const [step, setStep] = useState<"select" | "amount">("select");
+  const [step, setStep] = useState<"select" | "amount" | "success">("select");
+  const [completedTransaction, setCompletedTransaction] = useState<any>(null);
 
   const { data: searchResults, isLoading: isSearching } = useSearchProfiles(searchTerm);
   const { data: balance } = useBalance();
@@ -40,18 +42,42 @@ export function SendMoney() {
     const amountNum = parseFloat(amount);
     if (amountNum <= 0) return;
     
-    await sendMoney.mutateAsync({
-      recipientId: selectedContact.user_id,
-      amount: amountNum,
-      description: `Payment to ${selectedContact.display_name || selectedContact.email || 'user'}`,
-    });
+    try {
+      await sendMoney.mutateAsync({
+        recipientId: selectedContact.user_id,
+        amount: amountNum,
+        description: `Payment to ${selectedContact.display_name || selectedContact.email || 'user'}`,
+      });
 
-    navigate('/');
+      // Create receipt data
+      setCompletedTransaction({
+        id: crypto.randomUUID(),
+        amount: amountNum,
+        currency: "USD",
+        description: `Payment to ${selectedContact.display_name || selectedContact.email || 'user'}`,
+        created_at: new Date().toISOString(),
+        status: "completed",
+        recipientName: selectedContact.display_name,
+        recipientEmail: selectedContact.email,
+      });
+      setStep("success");
+    } catch (error) {
+      // Error handled by mutation
+    }
   };
 
-  const getInitials = (name: string | null) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const getInitials = (name: string | null, email: string | null) => {
+    if (name) {
+      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    if (email) {
+      return email.slice(0, 2).toUpperCase();
+    }
+    return 'U';
+  };
+
+  const handleCloseReceipt = () => {
+    navigate('/');
   };
 
   return (
@@ -61,11 +87,11 @@ export function SendMoney() {
       className="min-h-screen flex flex-col bg-background"
     >
       {/* Header */}
-      <div className="flex items-center gap-4 p-4 bg-white border-b border-border">
+      <div className="flex items-center gap-4 p-4 bg-primary text-primary-foreground">
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={() => step === "amount" ? setStep("select") : navigate("/")}
-          className="p-2 rounded-full hover:bg-muted transition-colors"
+          className="p-2 rounded-full hover:bg-white/10 transition-colors"
         >
           <ArrowLeft className="h-5 w-5" />
         </motion.button>
@@ -88,26 +114,26 @@ export function SendMoney() {
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
-                  placeholder="Search by email, name, or phone"
+                  placeholder="Enter email address"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 h-12 bg-muted border-0 rounded-xl"
+                  className="pl-12 h-14 bg-muted border-0 rounded-2xl text-base"
                 />
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Enter email, name, or phone number
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                Search by email, name, or phone number
               </p>
             </div>
 
             {/* Search Results */}
             <div className="px-4 flex-1">
               {isSearching ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 </div>
               ) : searchResults && searchResults.length > 0 ? (
                 <>
-                  <h2 className="text-sm font-medium text-muted-foreground mb-3">RESULTS</h2>
+                  <h2 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider">Results</h2>
                   <div className="space-y-2">
                     {searchResults.map((profile, index) => (
                       <motion.button
@@ -117,37 +143,53 @@ export function SendMoney() {
                         transition={{ delay: index * 0.05 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleContactSelect(profile)}
-                        className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-muted/50 transition-colors"
+                        className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all"
                       >
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center">
+                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
                           {profile.avatar_url ? (
                             <img src={profile.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
                           ) : (
-                            <span className="text-sm font-bold text-white">
-                              {getInitials(profile.display_name)}
+                            <span className="text-base font-bold text-white">
+                              {getInitials(profile.display_name, profile.email)}
                             </span>
                           )}
                         </div>
-                        <div className="text-left">
-                          <p className="font-medium">{profile.display_name || profile.email || 'User'}</p>
-                          <p className="text-sm text-muted-foreground">{profile.email || profile.phone_number || 'No contact'}</p>
+                        <div className="text-left flex-1">
+                          <p className="font-semibold text-foreground">{profile.display_name || profile.email?.split('@')[0] || 'User'}</p>
+                          <p className="text-sm text-muted-foreground">{profile.email || profile.phone_number || 'No contact info'}</p>
                         </div>
                       </motion.button>
                     ))}
                   </div>
                 </>
               ) : searchTerm.length >= 2 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No users found
-                </div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-12"
+                >
+                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Search className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <p className="text-muted-foreground font-medium">No users found</p>
+                  <p className="text-sm text-muted-foreground mt-1">Try a different search term</p>
+                </motion.div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  Search for a user to send money
-                </div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-12"
+                >
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Search className="h-8 w-8 text-primary" />
+                  </div>
+                  <p className="text-foreground font-medium">Find someone to pay</p>
+                  <p className="text-sm text-muted-foreground mt-1">Enter their email or name above</p>
+                </motion.div>
               )}
             </div>
           </motion.div>
-        ) : (
+        ) : step === "amount" ? (
           <motion.div
             key="amount"
             initial={{ opacity: 0, x: 20 }}
@@ -155,6 +197,19 @@ export function SendMoney() {
             exit={{ opacity: 0, x: 20 }}
             className="flex-1 flex flex-col"
           >
+            {/* Recipient Info */}
+            <div className="px-4 py-6 flex items-center justify-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                <span className="text-sm font-bold text-white">
+                  {getInitials(selectedContact?.display_name || null, selectedContact?.email || null)}
+                </span>
+              </div>
+              <div>
+                <p className="font-semibold">{selectedContact?.display_name || selectedContact?.email?.split('@')[0] || 'User'}</p>
+                <p className="text-sm text-muted-foreground">{selectedContact?.email}</p>
+              </div>
+            </div>
+
             {/* Amount Display */}
             <div className="flex-1 flex flex-col items-center justify-center px-4">
               <motion.div
@@ -164,27 +219,27 @@ export function SendMoney() {
               >
                 ${amount || "0"}
               </motion.div>
-              {selectedContact && (
-                <p className="text-muted-foreground">
-                  to {selectedContact.display_name || selectedContact.email || 'User'}
-                </p>
-              )}
               {balance && (
                 <p className="text-sm text-muted-foreground mt-2">
-                  Available: ${Number(balance.amount).toFixed(2)}
+                  Available balance: <span className="font-semibold">${Number(balance.amount).toFixed(2)}</span>
+                </p>
+              )}
+              {balance && parseFloat(amount) > Number(balance.amount) && (
+                <p className="text-sm text-destructive mt-1">
+                  Insufficient balance
                 </p>
               )}
             </div>
 
             {/* Numpad */}
-            <div className="p-4 pb-8">
+            <div className="p-4 pb-8 bg-muted/30">
               <div className="grid grid-cols-3 gap-3 mb-4">
                 {["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0"].map((num) => (
                   <motion.button
                     key={num}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => handleNumberPress(num)}
-                    className="h-16 rounded-2xl bg-muted text-2xl font-semibold hover:bg-muted/80 transition-colors"
+                    className="h-16 rounded-2xl bg-card text-2xl font-semibold hover:bg-muted transition-colors border border-border"
                   >
                     {num}
                   </motion.button>
@@ -192,24 +247,35 @@ export function SendMoney() {
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={handleDelete}
-                  className="h-16 rounded-2xl bg-muted hover:bg-muted/80 transition-colors flex items-center justify-center"
+                  className="h-16 rounded-2xl bg-card hover:bg-muted transition-colors flex items-center justify-center border border-border"
                 >
                   <X className="h-6 w-6" />
                 </motion.button>
               </div>
               <Button
-                disabled={!amount || parseFloat(amount) === 0 || sendMoney.isPending}
+                disabled={!amount || parseFloat(amount) === 0 || parseFloat(amount) > Number(balance?.amount || 0) || sendMoney.isPending}
                 onClick={handlePay}
-                className="w-full h-14 text-lg font-semibold rounded-full bg-primary hover:bg-primary-dark"
+                className="w-full h-14 text-lg font-semibold rounded-full"
               >
                 {sendMoney.isPending ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
-                  `Pay $${amount || "0"}`
+                  `Send $${amount || "0"}`
                 )}
               </Button>
             </div>
           </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      {/* Receipt Modal */}
+      <AnimatePresence>
+        {step === "success" && completedTransaction && (
+          <Receipt
+            transaction={completedTransaction}
+            type="sent"
+            onClose={handleCloseReceipt}
+          />
         )}
       </AnimatePresence>
     </motion.div>
