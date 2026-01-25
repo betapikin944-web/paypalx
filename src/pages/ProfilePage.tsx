@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   User,
   Shield,
@@ -11,7 +13,6 @@ import {
   QrCode,
   Smartphone,
 } from "lucide-react";
-
 const profileSections = [
   {
     title: "Account",
@@ -38,6 +39,17 @@ const profileSections = [
 ];
 
 export default function ProfilePage() {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/welcome');
+  };
+
+  const userEmail = user?.email || 'user@example.com';
+  const userInitials = userEmail.slice(0, 2).toUpperCase();
+
   return (
     <div className="min-h-screen pb-24">
       {/* Profile Header */}
@@ -50,10 +62,10 @@ export default function ProfilePage() {
           whileHover={{ scale: 1.05 }}
           className="w-24 h-24 rounded-full gradient-primary mx-auto mb-4 flex items-center justify-center glow-primary"
         >
-          <span className="text-3xl font-bold text-primary-foreground">JD</span>
+          <span className="text-3xl font-bold text-primary-foreground">{userInitials}</span>
         </motion.div>
-        <h1 className="text-2xl font-bold">John Doe</h1>
-        <p className="text-muted-foreground">$johndoe</p>
+        <h1 className="text-2xl font-bold">{userEmail.split('@')[0]}</h1>
+        <p className="text-muted-foreground">{userEmail}</p>
       </motion.div>
 
       {/* Stats */}
@@ -116,6 +128,7 @@ export default function ProfilePage() {
       >
         <motion.button
           whileTap={{ scale: 0.98 }}
+          onClick={handleLogout}
           className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card hover:bg-destructive/10 transition-colors group"
         >
           <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
