@@ -43,7 +43,7 @@ export function SendMoney() {
     await sendMoney.mutateAsync({
       recipientId: selectedContact.user_id,
       amount: amountNum,
-      description: `Payment to ${selectedContact.display_name || 'user'}`,
+      description: `Payment to ${selectedContact.display_name || selectedContact.email || 'user'}`,
     });
 
     navigate('/');
@@ -70,7 +70,7 @@ export function SendMoney() {
           <ArrowLeft className="h-5 w-5" />
         </motion.button>
         <h1 className="text-xl font-semibold">
-          {step === "select" ? "Send Money" : `To ${selectedContact?.display_name || 'User'}`}
+          {step === "select" ? "Send Money" : `To ${selectedContact?.display_name || selectedContact?.email || 'User'}`}
         </h1>
       </div>
 
@@ -88,14 +88,14 @@ export function SendMoney() {
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name or phone number"
+                  placeholder="Search by email, name, or phone"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-12 h-12 bg-muted border-0 rounded-xl"
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Enter at least 2 characters to search
+                Enter email, name, or phone number
               </p>
             </div>
 
@@ -129,8 +129,8 @@ export function SendMoney() {
                           )}
                         </div>
                         <div className="text-left">
-                          <p className="font-medium">{profile.display_name || 'User'}</p>
-                          <p className="text-sm text-muted-foreground">{profile.phone_number || 'No phone'}</p>
+                          <p className="font-medium">{profile.display_name || profile.email || 'User'}</p>
+                          <p className="text-sm text-muted-foreground">{profile.email || profile.phone_number || 'No contact'}</p>
                         </div>
                       </motion.button>
                     ))}
@@ -166,7 +166,7 @@ export function SendMoney() {
               </motion.div>
               {selectedContact && (
                 <p className="text-muted-foreground">
-                  to {selectedContact.display_name || 'User'}
+                  to {selectedContact.display_name || selectedContact.email || 'User'}
                 </p>
               )}
               {balance && (

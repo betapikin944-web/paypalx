@@ -35,13 +35,15 @@ const AdminPage = () => {
   const [isAddingFunds, setIsAddingFunds] = useState(false);
 
   // Filter users - handle null values properly
+  // Filter users - handle null values properly and search by email
   const filteredUsers = users?.filter(user => {
     if (!searchTerm.trim()) return true;
     const search = searchTerm.toLowerCase();
     const name = user.display_name?.toLowerCase() || '';
     const phone = user.phone_number || '';
+    const email = (user as any).email?.toLowerCase() || '';
     const id = user.user_id.toLowerCase();
-    return name.includes(search) || phone.includes(search) || id.includes(search);
+    return name.includes(search) || phone.includes(search) || email.includes(search) || id.includes(search);
   });
 
   const handleEditBalance = (userId: string, currentBalance: number) => {
