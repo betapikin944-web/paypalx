@@ -3,12 +3,17 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import SendPage from "./pages/SendPage";
 import CardPage from "./pages/CardPage";
 import InvestPage from "./pages/InvestPage";
 import ActivityPage from "./pages/ActivityPage";
 import ProfilePage from "./pages/ProfilePage";
+import WelcomePage from "./pages/WelcomePage";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -16,22 +21,27 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <div className="max-w-md mx-auto min-h-screen relative">
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/send" element={<SendPage />} />
-            <Route path="/request" element={<SendPage />} />
-            <Route path="/card" element={<CardPage />} />
-            <Route path="/invest" element={<InvestPage />} />
-            <Route path="/activity" element={<ActivityPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </div>
-      </BrowserRouter>
+      <AuthProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <div className="max-w-md mx-auto min-h-screen relative">
+            <Routes>
+              <Route path="/welcome" element={<WelcomePage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/send" element={<ProtectedRoute><SendPage /></ProtectedRoute>} />
+              <Route path="/request" element={<ProtectedRoute><SendPage /></ProtectedRoute>} />
+              <Route path="/card" element={<ProtectedRoute><CardPage /></ProtectedRoute>} />
+              <Route path="/invest" element={<ProtectedRoute><InvestPage /></ProtectedRoute>} />
+              <Route path="/activity" element={<ProtectedRoute><ActivityPage /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </div>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
