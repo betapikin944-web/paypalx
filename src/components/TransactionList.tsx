@@ -1,50 +1,29 @@
 import { motion } from "framer-motion";
-import { ArrowUpRight, ArrowDownLeft, ShoppingBag, Coffee, Zap } from "lucide-react";
-
-interface Transaction {
-  id: string;
-  type: "sent" | "received" | "purchase";
-  name: string;
-  description?: string;
-  amount: number;
-  date: string;
-  icon?: "shopping" | "coffee" | "lightning";
-}
-
-const iconMap = {
-  shopping: ShoppingBag,
-  coffee: Coffee,
-  lightning: Zap,
-};
-
-const transactions: Transaction[] = [
-  { id: "1", type: "received", name: "Alex Johnson", amount: 250.0, date: "Today" },
-  { id: "2", type: "sent", name: "Sarah Miller", amount: -45.0, date: "Today" },
-  { id: "3", type: "purchase", name: "Starbucks", description: "Coffee", amount: -6.75, date: "Yesterday", icon: "coffee" },
-  { id: "4", type: "received", name: "Cash Back", description: "Reward", amount: 12.50, date: "Yesterday", icon: "lightning" },
-  { id: "5", type: "purchase", name: "Amazon", description: "Online purchase", amount: -89.99, date: "Dec 18", icon: "shopping" },
-  { id: "6", type: "sent", name: "Mike Chen", amount: -150.0, date: "Dec 17" },
-];
+import { ArrowUpRight, ArrowDownLeft, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useTransactions } from "@/hooks/useTransactions";
+import { useAuth } from "@/contexts/AuthContext";
+import { format, isToday, isYesterday } from "date-fns";
 
 export function TransactionList() {
-  const formatAmount = (amount: number) => {
-    const prefix = amount >= 0 ? "+" : "-";
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { data: transactions, isLoading } = useTransactions();
+
+  const formatAmount = (amount: number, isSent: boolean) => {
+    const prefix = isSent ? "-" : "+";
     return `${prefix}$${Math.abs(amount).toFixed(2)}`;
   };
 
-  const getIcon = (transaction: Transaction) => {
-    if (transaction.icon) {
-      const Icon = iconMap[transaction.icon];
-      return <Icon className="h-5 w-5 text-muted-foreground" />;
-    }
-    return transaction.type === "received" ? (
-      <ArrowDownLeft className="h-5 w-5 text-success" />
-    ) : (
-      <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
-    );
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    if (isToday(date)) return "Today";
+    if (isYesterday(date)) return "Yesterday";
+    return format(date, "MMM d");
   };
 
-  const getInitials = (name: string) => {
+  const getInitials = (name: string | null) => {
+    if (!name) return "U";
     return name
       .split(" ")
       .map((n) => n[0])
@@ -52,6 +31,9 @@ export function TransactionList() {
       .toUpperCase()
       .slice(0, 2);
   };
+
+  // Take only the 6 most recent transactions for the home screen
+  const recentTransactions = transactions?.slice(0, 6) || [];
 
   return (
     <motion.div
@@ -62,48 +44,71 @@ export function TransactionList() {
     >
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-foreground">Recent Activity</h2>
-        <button className="text-sm text-primary font-semibold hover:underline">See All</button>
+        <button 
+          onClick={() => navigate('/activity')}
+          className="text-sm text-primary font-semibold hover:underline"
+        >
+          See All
+        </button>
       </div>
       <div className="bg-card rounded-2xl shadow-card border border-border overflow-hidden">
-        {transactions.map((transaction, index) => (
-          <motion.div
-            key={transaction.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.35 + index * 0.05 }}
-            className={`transaction-item ${
-              index !== transactions.length - 1 ? "border-b border-border" : ""
-            }`}
-          >
-            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center shrink-0">
-              {transaction.icon ? (
-                getIcon(transaction)
-              ) : (
-                <span className="text-sm font-semibold text-foreground">
-                  {getInitials(transaction.name)}
-                </span>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-foreground truncate">{transaction.name}</p>
-              <p className="text-sm text-muted-foreground">
-                {transaction.description || transaction.date}
-              </p>
-            </div>
-            <div className="text-right">
-              <p
-                className={`font-semibold ${
-                  transaction.amount >= 0 ? "text-success" : "text-foreground"
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : recentTransactions.length === 0 ? (
+          <div className="py-8 text-center text-muted-foreground">
+            <p>No transactions yet</p>
+            <p className="text-sm mt-1">Send or receive money to see activity here</p>
+          </div>
+        ) : (
+          recentTransactions.map((transaction, index) => {
+            const isSent = transaction.sender_id === user?.id;
+            const otherParty = isSent 
+              ? transaction.recipient_profile 
+              : transaction.sender_profile;
+            const displayName = otherParty?.display_name || 
+              (transaction.description?.includes('Admin') ? 'Admin Deposit' : 'User');
+
+            return (
+              <motion.div
+                key={transaction.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.35 + index * 0.05 }}
+                className={`transaction-item ${
+                  index !== recentTransactions.length - 1 ? "border-b border-border" : ""
                 }`}
               >
-                {formatAmount(transaction.amount)}
-              </p>
-              {transaction.description && (
-                <p className="text-xs text-muted-foreground">{transaction.date}</p>
-              )}
-            </div>
-          </motion.div>
-        ))}
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center shrink-0">
+                  {isSent ? (
+                    <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <ArrowDownLeft className="h-5 w-5 text-emerald-600" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground truncate">{displayName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {transaction.description || (isSent ? 'Sent' : 'Received')}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p
+                    className={`font-semibold ${
+                      isSent ? "text-foreground" : "text-emerald-600"
+                    }`}
+                  >
+                    {formatAmount(transaction.amount, isSent)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDate(transaction.created_at)}
+                  </p>
+                </div>
+              </motion.div>
+            );
+          })
+        )}
       </div>
     </motion.div>
   );
