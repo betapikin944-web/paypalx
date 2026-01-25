@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, ChevronRight } from "lucide-react";
 import { useState } from "react";
 
 interface BalanceCardProps {
@@ -22,11 +22,11 @@ export function BalanceCard({ balance }: BalanceCardProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
-      className="text-center py-8"
+      className="mx-4 p-6 bg-card rounded-2xl shadow-card border border-border"
     >
-      <div className="flex items-center justify-center gap-3 mb-2">
-        <span className="text-muted-foreground text-sm font-medium uppercase tracking-wider">
-          Your Balance
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-muted-foreground text-sm font-medium">
+          PayPal balance
         </span>
         <button
           onClick={() => setShowBalance(!showBalance)}
@@ -35,14 +35,20 @@ export function BalanceCard({ balance }: BalanceCardProps) {
           {showBalance ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
         </button>
       </div>
-      <motion.h1
+      <motion.div
         key={showBalance ? "visible" : "hidden"}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="balance-display"
+        className="mb-4"
       >
-        {showBalance ? formatBalance(balance) : "••••••"}
-      </motion.h1>
+        <h1 className="balance-display">
+          {showBalance ? formatBalance(balance) : "••••••"}
+        </h1>
+      </motion.div>
+      <button className="flex items-center text-primary text-sm font-semibold hover:underline">
+        <span>Manage balance</span>
+        <ChevronRight className="h-4 w-4 ml-1" />
+      </button>
     </motion.div>
   );
 }

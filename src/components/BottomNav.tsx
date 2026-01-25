@@ -1,12 +1,12 @@
-import { Home, ArrowLeftRight, CreditCard, Bitcoin, User } from "lucide-react";
+import { Home, ArrowLeftRight, CreditCard, Wallet, User } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
 const navItems = [
   { icon: Home, label: "Home", path: "/" },
   { icon: ArrowLeftRight, label: "Activity", path: "/activity" },
-  { icon: CreditCard, label: "Card", path: "/card" },
-  { icon: Bitcoin, label: "Invest", path: "/invest" },
+  { icon: CreditCard, label: "Cards", path: "/card" },
+  { icon: Wallet, label: "Wallet", path: "/invest" },
   { icon: User, label: "Profile", path: "/profile" },
 ];
 
@@ -17,7 +17,7 @@ export function BottomNav() {
     <motion.nav
       initial={{ y: 100 }}
       animate={{ y: 0 }}
-      className="fixed bottom-0 left-0 right-0 z-50 glass-card border-t border-border/30"
+      className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border shadow-card"
     >
       <div className="container flex items-center justify-around py-2 pb-safe">
         {navItems.map((item) => {
