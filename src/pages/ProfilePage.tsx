@@ -4,6 +4,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useTransactions } from "@/hooks/useTransactions";
+import { useIsAdmin } from "@/hooks/useAdmin";
 import { useMemo } from "react";
 import {
   User,
@@ -16,6 +17,7 @@ import {
   QrCode,
   Smartphone,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 
 const profileSections = [
@@ -47,6 +49,7 @@ export default function ProfilePage() {
   const { user, signOut } = useAuth();
   const { data: profile } = useProfile();
   const { data: transactions } = useTransactions();
+  const { data: isAdmin } = useIsAdmin();
   const navigate = useNavigate();
 
   const stats = useMemo(() => {
@@ -120,6 +123,33 @@ export default function ProfilePage() {
           <p className="text-xs text-muted-foreground">Total Received</p>
         </div>
       </motion.div>
+
+      {/* Admin Section */}
+      {isAdmin && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+          className="mb-6"
+        >
+          <h2 className="px-4 text-sm font-medium text-muted-foreground mb-2 uppercase tracking-wider">
+            Administration
+          </h2>
+          <div className="mx-4 rounded-2xl bg-card border border-border overflow-hidden">
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate('/admin')}
+              className="w-full flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+              </div>
+              <span className="flex-1 text-left font-medium text-foreground">Admin Dashboard</span>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </motion.button>
+          </div>
+        </motion.div>
+      )}
 
       {/* Settings Sections */}
       {profileSections.map((section, sectionIndex) => (
