@@ -24,37 +24,45 @@ export function useIsAdmin() {
 }
 
 export function useAllUsers() {
-  const { data: isAdmin } = useIsAdmin();
+  const { data: isAdmin, isSuccess: adminCheckComplete } = useIsAdmin();
 
   return useQuery({
     queryKey: ['allUsers'],
     queryFn: async () => {
+      // Fetch all profiles (RLS allows viewing all profiles)
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
+      }
 
+      // Fetch all balances (admin RLS policy required)
       const { data: balances, error: balancesError } = await supabase
         .from('balances')
         .select('*');
 
-      if (balancesError) throw balancesError;
+      if (balancesError) {
+        console.error('Error fetching balances:', balancesError);
+        throw balancesError;
+      }
 
       // Combine profiles with balances
-      return profiles.map(profile => ({
+      return (profiles || []).map(profile => ({
         ...profile,
-        balance: balances.find(b => b.user_id === profile.user_id)?.amount ?? 0,
-        currency: balances.find(b => b.user_id === profile.user_id)?.currency ?? 'USD',
+        balance: balances?.find(b => b.user_id === profile.user_id)?.amount ?? 0,
+        currency: balances?.find(b => b.user_id === profile.user_id)?.currency ?? 'USD',
       }));
     },
-    enabled: isAdmin === true,
+    enabled: adminCheckComplete && isAdmin === true,
   });
 }
 
 export function useAllTransactions() {
-  const { data: isAdmin } = useIsAdmin();
+  const { data: isAdmin, isSuccess: adminCheckComplete } = useIsAdmin();
 
   return useQuery({
     queryKey: ['allTransactions'],
@@ -65,9 +73,12 @@ export function useAllTransactions() {
         .order('created_at', { ascending: false })
         .limit(100);
 
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Error fetching transactions:', error);
+        throw error;
+      }
+      return data || [];
     },
-    enabled: isAdmin === true,
+    enabled: adminCheckComplete && isAdmin === true,
   });
 }
