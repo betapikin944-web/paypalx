@@ -158,9 +158,14 @@ export function useSendMoney() {
       const transactionDate = format(new Date(), 'MMM d, yyyy h:mm a');
       const receiptUrl = `${window.location.origin}/activity`;
       
-      // Alert to sender
+       console.log('📧 Transaction complete, preparing to send emails...');
+       console.log('Sender:', senderProfile?.email, 'Recipient:', recipientProfile?.email);
+       
+       // Alert to sender - email goes TO the sender
       if (senderProfile?.email) {
+         console.log('Sending receipt to sender:', senderProfile.email);
         sendTransactionAlert({
+           to_email: senderProfile.email, // Send TO sender
           amount: amount.toFixed(2),
           sender_name: senderProfile.display_name || 'User',
           sender_email: senderProfile.email,
@@ -172,9 +177,11 @@ export function useSendMoney() {
         }).catch(console.error);
       }
 
-      // Alert to recipient
+       // Alert to recipient - email goes TO the recipient
       if (recipientProfile?.email) {
+         console.log('Sending receipt to recipient:', recipientProfile.email);
         sendTransactionAlert({
+           to_email: recipientProfile.email, // Send TO recipient
           amount: amount.toFixed(2),
           sender_name: senderProfile?.display_name || 'User',
           sender_email: senderProfile?.email || '',
