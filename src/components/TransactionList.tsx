@@ -67,8 +67,9 @@ export function TransactionList() {
             const otherParty = isSent 
               ? transaction.recipient_profile 
               : transaction.sender_profile;
-            const displayName = otherParty?.display_name || 
-              (transaction.description?.includes('Admin') ? 'Admin Deposit' : 'User');
+            const otherPartyName = otherParty?.display_name || 
+              (transaction.description?.includes('Admin') ? 'Admin' : 'User');
+            const actionLabel = isSent ? 'Sent to' : 'Received from';
 
             return (
               <motion.div
@@ -88,9 +89,9 @@ export function TransactionList() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground truncate">{displayName}</p>
+                  <p className="font-medium text-foreground truncate">{otherPartyName}</p>
                   <p className="text-sm text-muted-foreground">
-                    {transaction.description || (isSent ? 'Sent' : 'Received')}
+                    {actionLabel}
                   </p>
                 </div>
                 <div className="text-right">
