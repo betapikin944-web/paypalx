@@ -102,74 +102,38 @@ export function useSendMoney() {
         .eq('user_id', recipientId)
         .single();
 
-      // Get sender's current balance
-      const { data: senderBalance, error: balanceError } = await supabase
-        .from('balances')
-        .select('amount')
-        .eq('user_id', user.id)
-        .single();
+      // Use the secure database function to handle the transfer atomically
+      const { data: transactionId, error: transferError } = await supabase
+        .rpc('transfer_funds', {
+          _sender_id: user.id,
+          _recipient_id: recipientId,
+          _amount: amount,
+          _description: description || null
+        });
 
-      if (balanceError) throw balanceError;
-      if (!senderBalance || Number(senderBalance.amount) < amount) {
-        throw new Error('Insufficient balance');
+      if (transferError) {
+        // Parse the error message for user-friendly display
+        if (transferError.message.includes('Insufficient balance')) {
+          throw new Error('Insufficient balance');
+        }
+        throw transferError;
       }
 
-      // Get recipient's current balance (may not exist)
-      const { data: recipientBalance } = await supabase
-        .from('balances')
-        .select('amount')
-        .eq('user_id', recipientId)
-        .maybeSingle();
-
-      // If recipient has no balance, create one
-      if (!recipientBalance) {
-        const { error: createBalanceError } = await supabase
-          .from('balances')
-          .insert({ user_id: recipientId, amount: 0 });
-        if (createBalanceError) throw createBalanceError;
-      }
-
-      // Create transaction
-      const { data: newTransaction, error: transactionError } = await supabase
+      // Get the created transaction for email
+      const { data: newTransaction } = await supabase
         .from('transactions')
-        .insert({
-          sender_id: user.id,
-          recipient_id: recipientId,
-          amount,
-          description,
-          status: 'completed',
-        })
-        .select()
+        .select('*')
+        .eq('id', transactionId)
         .single();
-
-      if (transactionError) throw transactionError;
-
-      // Update sender's balance
-      const { error: updateSenderError } = await supabase
-        .from('balances')
-        .update({ amount: Number(senderBalance.amount) - amount })
-        .eq('user_id', user.id);
-
-      if (updateSenderError) throw updateSenderError;
-
-      // Update recipient's balance
-      const { error: updateRecipientError } = await supabase
-        .from('balances')
-        .update({ amount: Number(recipientBalance?.amount || 0) + amount })
-        .eq('user_id', recipientId);
-
-      if (updateRecipientError) throw updateRecipientError;
 
       // Send email alerts via Resend edge function (non-blocking)
       const transactionDate = format(new Date(), 'MMM d, yyyy h:mm a');
       const receiptUrl = `${window.location.origin}/activity`;
       
       console.log('📧 Transaction complete, sending emails via Resend...');
-      console.log('Sender:', senderProfile?.email, 'Recipient:', recipientProfile?.email);
       
       // Email to sender
-      if (senderProfile?.email) {
-        console.log('Sending receipt to sender:', senderProfile.email);
+      if (senderProfile?.email && newTransaction) {
         sendTransactionEmail({
           to_email: senderProfile.email,
           amount: amount.toFixed(2),
@@ -185,8 +149,7 @@ export function useSendMoney() {
       }
 
       // Email to recipient
-      if (recipientProfile?.email) {
-        console.log('Sending notification to recipient:', recipientProfile.email);
+      if (recipientProfile?.email && newTransaction) {
         sendTransactionEmail({
           to_email: recipientProfile.email,
           amount: amount.toFixed(2),
