@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEffect } from 'react';
 
 export interface Balance {
   id: string;
@@ -12,6 +13,34 @@ export interface Balance {
 
 export function useBalance() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Subscribe to realtime balance changes
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`balance-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'balances',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('💰 Balance updated in realtime:', payload);
+          // Invalidate the balance query to refetch
+          queryClient.invalidateQueries({ queryKey: ['balance', user.id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
 
   return useQuery({
     queryKey: ['balance', user?.id],
