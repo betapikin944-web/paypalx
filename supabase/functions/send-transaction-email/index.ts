@@ -77,14 +77,14 @@ This is an automated notification from PayPro.
           
           <!-- Logo Header -->
           <tr>
-            <td style="padding: 24px 0; text-align: center;">
+            <td style="padding: 32px 0; text-align: center;">
               <table role="presentation" style="margin: 0 auto;">
                 <tr>
-                  <td style="background: linear-gradient(135deg, #003087 0%, #0070BA 100%); width: 48px; height: 48px; border-radius: 12px; text-align: center; vertical-align: middle;">
-                    <span style="color: #ffffff; font-size: 24px; font-weight: 700;">P</span>
+                  <td style="background: linear-gradient(135deg, #003087 0%, #0070BA 100%); width: 56px; height: 56px; border-radius: 14px; text-align: center; vertical-align: middle; box-shadow: 0 4px 12px rgba(0, 48, 135, 0.25);">
+                    <span style="color: #ffffff; font-size: 28px; font-weight: 800; font-family: 'PayPal Sans', -apple-system, BlinkMacSystemFont, sans-serif;">P</span>
                   </td>
-                  <td style="padding-left: 12px;">
-                    <span style="color: #003087; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Pay</span><span style="color: #0070BA; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Pro</span>
+                  <td style="padding-left: 14px;">
+                    <span style="color: #003087; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; font-family: 'PayPal Sans', -apple-system, BlinkMacSystemFont, sans-serif;">Pay</span><span style="color: #0070BA; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; font-family: 'PayPal Sans', -apple-system, BlinkMacSystemFont, sans-serif;">Pro</span>
                   </td>
                 </tr>
               </table>
