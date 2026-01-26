@@ -52,11 +52,16 @@ export default function ActivityPage() {
   const handleTransactionClick = (transaction: any) => {
     const isSent = transaction.sender_id === user?.id;
     setSelectedTransaction({
-      ...transaction,
+      id: transaction.id,
+      amount: transaction.amount,
+      currency: transaction.currency,
+      description: transaction.description,
+      created_at: transaction.created_at,
+      status: transaction.status,
       type: isSent ? "sent" : "received",
-      recipientName: transaction.recipient_profile?.display_name,
+      recipientName: transaction.recipient_profile?.display_name || 'User',
       recipientEmail: transaction.recipient_profile?.email,
-      senderName: transaction.sender_profile?.display_name,
+      senderName: transaction.sender_profile?.display_name || 'User',
       senderEmail: transaction.sender_profile?.email,
     });
   };
