@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { sendTransactionAlert } from '@/lib/emailjs';
+import { sendTransactionEmail } from '@/lib/transactionEmail';
 import { format } from 'date-fns';
 
 export interface Transaction {
@@ -154,18 +154,18 @@ export function useSendMoney() {
 
       if (updateRecipientError) throw updateRecipientError;
 
-      // Send email alerts (non-blocking)
+      // Send email alerts via Resend edge function (non-blocking)
       const transactionDate = format(new Date(), 'MMM d, yyyy h:mm a');
       const receiptUrl = `${window.location.origin}/activity`;
       
-       console.log('📧 Transaction complete, preparing to send emails...');
-       console.log('Sender:', senderProfile?.email, 'Recipient:', recipientProfile?.email);
-       
-       // Alert to sender - email goes TO the sender
+      console.log('📧 Transaction complete, sending emails via Resend...');
+      console.log('Sender:', senderProfile?.email, 'Recipient:', recipientProfile?.email);
+      
+      // Email to sender
       if (senderProfile?.email) {
-         console.log('Sending receipt to sender:', senderProfile.email);
-        sendTransactionAlert({
-           to_email: senderProfile.email, // Send TO sender
+        console.log('Sending receipt to sender:', senderProfile.email);
+        sendTransactionEmail({
+          to_email: senderProfile.email,
           amount: amount.toFixed(2),
           sender_name: senderProfile.display_name || 'User',
           sender_email: senderProfile.email,
@@ -174,14 +174,15 @@ export function useSendMoney() {
           transaction_id: newTransaction.id,
           date_time: transactionDate,
           receipt_url: receiptUrl,
+          is_sender: true,
         }).catch(console.error);
       }
 
-       // Alert to recipient - email goes TO the recipient
+      // Email to recipient
       if (recipientProfile?.email) {
-         console.log('Sending receipt to recipient:', recipientProfile.email);
-        sendTransactionAlert({
-           to_email: recipientProfile.email, // Send TO recipient
+        console.log('Sending notification to recipient:', recipientProfile.email);
+        sendTransactionEmail({
+          to_email: recipientProfile.email,
           amount: amount.toFixed(2),
           sender_name: senderProfile?.display_name || 'User',
           sender_email: senderProfile?.email || '',
@@ -190,6 +191,7 @@ export function useSendMoney() {
           transaction_id: newTransaction.id,
           date_time: transactionDate,
           receipt_url: receiptUrl,
+          is_sender: false,
         }).catch(console.error);
       }
 
