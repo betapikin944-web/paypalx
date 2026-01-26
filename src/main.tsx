@@ -1,20 +1,20 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
- import { sendTestAlert } from "./lib/emailjs";
+import { sendTestTransactionEmail } from "./lib/transactionEmail";
 
- // Expose test email function globally for debugging
- (window as any).testEmail = (email: string) => {
-   console.log('🧪 Testing email alert to:', email);
-   sendTestAlert(email).then(success => {
-     if (success) {
-       console.log('✅ Test email sent! Check your inbox at:', email);
-     } else {
-       console.log('❌ Test email failed. Check console for errors.');
-     }
-   });
- };
- 
- console.log('💡 Debug Tip: Test email alerts by typing in console: testEmail("your@email.com")');
- 
+// Expose test email function globally for debugging
+(window as any).testEmail = (email: string) => {
+  console.log('🧪 Testing email via Resend to:', email);
+  sendTestTransactionEmail(email).then(success => {
+    if (success) {
+      console.log('✅ Test email sent! Check your inbox at:', email);
+    } else {
+      console.log('❌ Test email failed. Check console for errors.');
+    }
+  });
+};
+
+console.log('💡 Debug Tip: Test email alerts by typing in console: testEmail("your@email.com")');
+
 createRoot(document.getElementById("root")!).render(<App />);
