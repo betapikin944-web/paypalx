@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
-import { X, User, Copy } from "lucide-react";
+import { X, User, Copy, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 interface ReceiptProps {
   transaction: {
@@ -25,6 +26,10 @@ export function Receipt({ transaction, type, onClose }: ReceiptProps) {
     ? transaction.recipientName || "User"
     : transaction.senderName || "User";
 
+  const otherPartyEmail = type === "sent"
+    ? transaction.recipientEmail
+    : transaction.senderEmail;
+
   const isCompleted = transaction.status === "completed";
   const isProcessing = transaction.status === "processing" || transaction.status === "pending";
 
@@ -32,6 +37,8 @@ export function Receipt({ transaction, type, onClose }: ReceiptProps) {
     navigator.clipboard.writeText(transaction.id);
     toast.success("Transaction ID copied");
   };
+
+  const formattedDate = format(new Date(transaction.created_at), "MMM d, yyyy 'at' h:mm a");
 
   return (
     <motion.div
@@ -64,14 +71,22 @@ export function Receipt({ transaction, type, onClose }: ReceiptProps) {
         </div>
 
         {/* Main Heading */}
-        <h1 className="text-2xl font-bold text-foreground mb-12">
-          You've have {type === "sent" ? "sent" : "received"} ${transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} {transaction.currency} {type === "sent" ? "to" : "from"} {otherPartyName}.
+        <h1 className="text-2xl font-bold text-foreground mb-2">
+          You {type === "sent" ? "sent" : "received"} ${transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} {transaction.currency}
         </h1>
+        <p className="text-lg text-muted-foreground mb-8">
+          {type === "sent" ? "to" : "from"} {otherPartyName}
+        </p>
+
+        {/* Date */}
+        <div className="mb-6">
+          <p className="text-sm text-muted-foreground">{formattedDate}</p>
+        </div>
 
         {/* Confirmation Notice */}
         <div className="border-t border-border pt-4 mb-6">
           <p className="text-muted-foreground text-sm">
-            {isCompleted ? "Transfer completed" : "Confirmation needed to completed"}
+            {isCompleted ? "Transfer completed" : "Confirmation needed to complete"}
           </p>
         </div>
 
@@ -118,28 +133,51 @@ export function Receipt({ transaction, type, onClose }: ReceiptProps) {
         <div className="border-t border-border pt-6">
           <h2 className="text-lg font-semibold text-foreground mb-4">Transaction details</h2>
           
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-start gap-3">
-              <User className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div>
-                <p className="text-sm text-muted-foreground">{type === "sent" ? "To" : "From"}</p>
-                <p className="font-semibold text-foreground">{otherPartyName}</p>
+          <div className="space-y-4">
+            {/* Recipient/Sender */}
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-3">
+                <User className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="text-sm text-muted-foreground">{type === "sent" ? "To" : "From"}</p>
+                  <p className="font-semibold text-foreground">{otherPartyName}</p>
+                </div>
               </div>
             </div>
-            <button 
-              onClick={handleCopy}
-              className="p-2 hover:bg-muted rounded-lg transition-colors"
-            >
-              <Copy className="h-5 w-5 text-muted-foreground" />
-            </button>
+
+            {/* Email */}
+            {otherPartyEmail && (
+              <div className="flex items-start gap-3">
+                <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="font-medium text-foreground">{otherPartyEmail}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Transaction ID */}
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-3">
+                <Copy className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Transaction ID</p>
+                  <p className="font-mono text-sm text-foreground">{transaction.id.slice(0, 16)}...</p>
+                </div>
+              </div>
+              <button 
+                onClick={handleCopy}
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
+              >
+                <Copy className="h-4 w-4 text-primary" />
+              </button>
+            </div>
           </div>
 
           {transaction.description && (
-            <div className="mt-4">
-              <p className="text-sm text-muted-foreground">Note: {transaction.description}</p>
-              <p className="text-sm text-muted-foreground">
-                ${transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} {transaction.currency} needed to be deposited.
-              </p>
+            <div className="mt-4 p-3 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">Note</p>
+              <p className="text-foreground">{transaction.description}</p>
             </div>
           )}
         </div>
