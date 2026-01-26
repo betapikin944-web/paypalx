@@ -1,4 +1,9 @@
-import { supabase } from '@/integrations/supabase/client';
+import emailjs from '@emailjs/browser';
+
+// EmailJS Configuration
+const SERVICE_ID = 'service_paypro';
+const TEMPLATE_ID = 'template_transaction';
+const PUBLIC_KEY = 'YOUR_PUBLIC_KEY'; // Replace with your EmailJS public key
 
 interface TransactionEmailParams {
   to_email: string;
@@ -14,28 +19,38 @@ interface TransactionEmailParams {
 }
 
 export async function sendTransactionEmail(params: TransactionEmailParams): Promise<boolean> {
-  console.log('📧 Sending transaction email via Resend...');
+  console.log('📧 Sending transaction email via EmailJS...');
   console.log('  → TO:', params.to_email);
   console.log('  → Type:', params.is_sender ? 'Sender receipt' : 'Receiver notification');
   console.log('  → Amount: $' + params.amount);
 
   try {
-    const { data, error } = await supabase.functions.invoke('send-transaction-email', {
-      body: params,
-    });
+    const templateParams = {
+      to_email: params.to_email,
+      amount: params.amount,
+      sender_name: params.sender_name,
+      sender_email: params.sender_email,
+      receiver_name: params.receiver_name,
+      receiver_email: params.receiver_email,
+      transaction_id: params.transaction_id,
+      date_time: params.date_time,
+      receipt_url: params.receipt_url,
+      action_text: params.is_sender ? 'sent' : 'received',
+      other_party: params.is_sender ? params.receiver_name : params.sender_name,
+      other_email: params.is_sender ? params.receiver_email : params.sender_email,
+      amount_color: params.is_sender ? '#ef4444' : '#22c55e',
+      amount_prefix: params.is_sender ? '-' : '+',
+    };
 
-    if (error) {
-      console.error('❌ Edge function error:', error);
-      return false;
-    }
+    const response = await emailjs.send(
+      SERVICE_ID,
+      TEMPLATE_ID,
+      templateParams,
+      PUBLIC_KEY
+    );
 
-    if (data?.success) {
-      console.log('✅ Email sent successfully to:', params.to_email);
-      return true;
-    } else {
-      console.error('❌ Email failed:', data?.error);
-      return false;
-    }
+    console.log('✅ Email sent successfully:', response);
+    return true;
   } catch (error) {
     console.error('❌ Failed to send email:', error);
     return false;

@@ -1,11 +1,11 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import { sendTestTransactionEmail } from "./lib/transactionEmail";
+import { sendTestTransactionEmail } from "./lib/emailjs";
 
 // Expose test email function globally for debugging
 (window as any).testEmail = (email: string) => {
-  console.log('🧪 Testing email via Resend to:', email);
+  console.log('🧪 Testing email via EmailJS to:', email);
   sendTestTransactionEmail(email).then(success => {
     if (success) {
       console.log('✅ Test email sent! Check your inbox at:', email);
