@@ -21,7 +21,11 @@
  }
  
  export async function sendTransactionAlert(params: TransactionEmailParams): Promise<boolean> {
-   console.log('🔍 EmailJS Debug - Sending email with params:', JSON.stringify(params, null, 2));
+  console.log('🔍 EmailJS Debug - Sending email with params:');
+  console.log('  → TO EMAIL:', params.to_email);
+  console.log('  → Amount:', params.amount);
+  console.log('  → Sender:', params.sender_name, '<' + params.sender_email + '>');
+  console.log('  → Receiver:', params.receiver_name, '<' + params.receiver_email + '>');
    
    try {
      const templateParams = {
@@ -39,13 +43,16 @@
  
      console.log('📧 Sending to EmailJS service:', SERVICE_ID);
      console.log('📧 Using template:', TEMPLATE_ID);
-     console.log('📧 Recipient email:', params.to_email);
+    console.log('📧 Recipient (to_email field):', params.to_email);
+    console.log('📧 Full template params:', JSON.stringify(templateParams, null, 2));
      
      const response = await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
-     console.log('✅ Email sent successfully:', response);
+    console.log('✅ Email sent successfully to:', params.to_email);
+    console.log('   Response:', response);
      return true;
    } catch (error) {
-     console.error('❌ Failed to send email:', error);
+    console.error('❌ Failed to send email to:', params.to_email);
+    console.error('   Error details:', error);
      return false;
    }
  }
