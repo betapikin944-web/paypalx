@@ -67,86 +67,106 @@ This is an automated notification from PayPro.
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Transaction Receipt</title>
+  <title>PayPro Transaction Receipt</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+<body style="margin: 0; padding: 0; background-color: #f5f7fa; font-family: 'PayPal Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" style="width: 100%; max-width: 500px; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-          <!-- Header -->
-          <tr>
-            <td style="padding: 32px 32px 24px; text-align: center; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border-radius: 12px 12px 0 0;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">PayPro</h1>
-              <p style="margin: 8px 0 0; color: rgba(255, 255, 255, 0.9); font-size: 14px;">Transaction Receipt</p>
-            </td>
-          </tr>
+        <table role="presentation" style="width: 100%; max-width: 520px; border-collapse: collapse;">
           
-          <!-- Amount -->
+          <!-- Logo Header -->
           <tr>
-            <td style="padding: 32px 32px 16px; text-align: center;">
-              <p style="margin: 0 0 8px; color: #71717a; font-size: 14px;">You ${actionText}</p>
-              <p style="margin: 0; color: ${is_sender ? '#ef4444' : '#22c55e'}; font-size: 42px; font-weight: 700;">
-                ${is_sender ? '-' : '+'}$${amount}
-              </p>
-            </td>
-          </tr>
-          
-          <!-- Transaction Details -->
-          <tr>
-            <td style="padding: 16px 32px 32px;">
-              <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px;">
+            <td style="padding: 24px 0; text-align: center;">
+              <table role="presentation" style="margin: 0 auto;">
                 <tr>
-                  <td style="padding: 16px;">
-                    <table role="presentation" style="width: 100%; border-collapse: collapse;">
-                      <tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-                          <span style="color: #71717a; font-size: 13px;">${is_sender ? 'To' : 'From'}</span>
-                        </td>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">
-                          <span style="color: #18181b; font-size: 14px; font-weight: 500;">${otherParty}</span><br>
-                          <span style="color: #71717a; font-size: 12px;">${otherEmail}</span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-                          <span style="color: #71717a; font-size: 13px;">Date</span>
-                        </td>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">
-                          <span style="color: #18181b; font-size: 14px;">${date_time}</span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 8px 0;">
-                          <span style="color: #71717a; font-size: 13px;">Transaction ID</span>
-                        </td>
-                        <td style="padding: 8px 0; text-align: right;">
-                          <span style="color: #18181b; font-size: 12px; font-family: monospace;">${transaction_id.slice(0, 8)}...</span>
-                        </td>
-                      </tr>
-                    </table>
+                  <td style="background: linear-gradient(135deg, #003087 0%, #0070BA 100%); width: 48px; height: 48px; border-radius: 12px; text-align: center; vertical-align: middle;">
+                    <span style="color: #ffffff; font-size: 24px; font-weight: 700;">P</span>
+                  </td>
+                  <td style="padding-left: 12px;">
+                    <span style="color: #003087; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Pay</span><span style="color: #0070BA; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Pro</span>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
           
-          <!-- CTA Button -->
+          <!-- Main Card -->
           <tr>
-            <td style="padding: 0 32px 32px; text-align: center;">
-              <a href="${receipt_url}" style="display: inline-block; padding: 14px 32px; background-color: #3b82f6; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">View Transaction History</a>
+            <td>
+              <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0, 48, 135, 0.08);">
+                
+                <!-- Status Banner -->
+                <tr>
+                  <td style="padding: 28px 32px 20px; text-align: center; border-bottom: 1px solid #e8ecf0;">
+                    <div style="display: inline-block; background: ${is_sender ? '#fef2f2' : '#ecfdf5'}; padding: 8px 20px; border-radius: 24px; margin-bottom: 16px;">
+                      <span style="color: ${is_sender ? '#dc2626' : '#059669'}; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Payment ${actionText}</span>
+                    </div>
+                    <p style="margin: 0; color: #1a1a2e; font-size: 48px; font-weight: 700; letter-spacing: -1px;">
+                      <span style="color: ${is_sender ? '#dc2626' : '#059669'};">${is_sender ? '-' : '+'}$${amount}</span>
+                    </p>
+                    <p style="margin: 12px 0 0; color: #64748b; font-size: 15px;">${is_sender ? 'Sent to' : 'Received from'} ${otherParty}</p>
+                  </td>
+                </tr>
+                
+                <!-- Transaction Details -->
+                <tr>
+                  <td style="padding: 24px 32px;">
+                    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                      <tr>
+                        <td style="padding: 14px 0; border-bottom: 1px solid #f1f5f9;">
+                          <span style="color: #64748b; font-size: 13px; font-weight: 500;">Recipient</span>
+                        </td>
+                        <td style="padding: 14px 0; border-bottom: 1px solid #f1f5f9; text-align: right;">
+                          <span style="color: #1a1a2e; font-size: 14px; font-weight: 600;">${otherParty}</span><br>
+                          <span style="color: #64748b; font-size: 13px;">${otherEmail}</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 14px 0; border-bottom: 1px solid #f1f5f9;">
+                          <span style="color: #64748b; font-size: 13px; font-weight: 500;">Date & Time</span>
+                        </td>
+                        <td style="padding: 14px 0; border-bottom: 1px solid #f1f5f9; text-align: right;">
+                          <span style="color: #1a1a2e; font-size: 14px; font-weight: 500;">${date_time}</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 14px 0;">
+                          <span style="color: #64748b; font-size: 13px; font-weight: 500;">Transaction ID</span>
+                        </td>
+                        <td style="padding: 14px 0; text-align: right;">
+                          <span style="color: #1a1a2e; font-size: 13px; font-family: 'SF Mono', Monaco, 'Courier New', monospace; background: #f8fafc; padding: 4px 10px; border-radius: 6px;">${transaction_id.slice(0, 12)}...</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                
+                <!-- CTA Button -->
+                <tr>
+                  <td style="padding: 8px 32px 32px; text-align: center;">
+                    <a href="${receipt_url}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #003087 0%, #0070BA 100%); color: #ffffff; text-decoration: none; border-radius: 28px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 16px rgba(0, 48, 135, 0.24);">View Full Receipt</a>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
           
           <!-- Footer -->
           <tr>
-            <td style="padding: 24px 32px; background-color: #f9fafb; border-radius: 0 0 12px 12px; text-align: center;">
-              <p style="margin: 0; color: #71717a; font-size: 12px;">
-                This is an automated notification from PayPro.<br>
+            <td style="padding: 32px 20px; text-align: center;">
+              <p style="margin: 0 0 8px; color: #94a3b8; font-size: 13px;">
+                This is an automated notification from PayPro.
+              </p>
+              <p style="margin: 0; color: #94a3b8; font-size: 12px;">
                 © ${new Date().getFullYear()} PayPro. All rights reserved.
+              </p>
+              <p style="margin: 16px 0 0; color: #cbd5e1; font-size: 11px;">
+                Questions? Contact support@paypro1.site
               </p>
             </td>
           </tr>
+          
         </table>
       </td>
     </tr>
