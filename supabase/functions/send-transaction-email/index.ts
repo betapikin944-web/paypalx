@@ -46,6 +46,21 @@ const handler = async (req: Request): Promise<Response> => {
     const otherParty = is_sender ? receiver_name : sender_name;
     const otherEmail = is_sender ? receiver_email : sender_email;
 
+    const plainTextContent = `
+PayPro Transaction Receipt
+
+You ${actionText} $${amount}
+
+${is_sender ? 'To' : 'From'}: ${otherParty} (${otherEmail})
+Date: ${date_time}
+Transaction ID: ${transaction_id}
+
+View your transaction history: ${receipt_url}
+
+This is an automated notification from PayPro.
+© ${new Date().getFullYear()} PayPro. All rights reserved.
+    `.trim();
+
     const htmlContent = `
 <!DOCTYPE html>
 <html>
@@ -147,7 +162,14 @@ const handler = async (req: Request): Promise<Response> => {
       from: "PayPro <service@paypro1.site>",
       to: [to_email],
       subject: subject,
+      text: plainTextContent,
       html: htmlContent,
+      tags: [
+        {
+          name: 'category',
+          value: 'transaction_receipt'
+        }
+      ],
     });
 
     console.log("✅ Email sent successfully:", emailResponse);
