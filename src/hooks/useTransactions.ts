@@ -156,30 +156,33 @@ export function useSendMoney() {
 
       // Send email alerts (non-blocking)
       const transactionDate = format(new Date(), 'MMM d, yyyy h:mm a');
+      const receiptUrl = `${window.location.origin}/activity`;
       
       // Alert to sender
       if (senderProfile?.email) {
         sendTransactionAlert({
-          to_email: senderProfile.email,
-          to_name: senderProfile.display_name || 'User',
           amount: amount.toFixed(2),
-          transaction_type: 'sent',
-          other_party_name: recipientProfile?.display_name || 'User',
+          sender_name: senderProfile.display_name || 'User',
+          sender_email: senderProfile.email,
+          receiver_name: recipientProfile?.display_name || 'User',
+          receiver_email: recipientProfile?.email || '',
           transaction_id: newTransaction.id,
-          date: transactionDate,
+          date_time: transactionDate,
+          receipt_url: receiptUrl,
         }).catch(console.error);
       }
 
       // Alert to recipient
       if (recipientProfile?.email) {
         sendTransactionAlert({
-          to_email: recipientProfile.email,
-          to_name: recipientProfile.display_name || 'User',
           amount: amount.toFixed(2),
-          transaction_type: 'received',
-          other_party_name: senderProfile?.display_name || 'User',
+          sender_name: senderProfile?.display_name || 'User',
+          sender_email: senderProfile?.email || '',
+          receiver_name: recipientProfile.display_name || 'User',
+          receiver_email: recipientProfile.email,
           transaction_id: newTransaction.id,
-          date: transactionDate,
+          date_time: transactionDate,
+          receipt_url: receiptUrl,
         }).catch(console.error);
       }
 
