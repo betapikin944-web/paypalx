@@ -114,14 +114,20 @@ export function useSendMoney() {
         throw new Error('Insufficient balance');
       }
 
-      // Get recipient's current balance
-      const { data: recipientBalance, error: recipientError } = await supabase
+      // Get recipient's current balance (may not exist)
+      const { data: recipientBalance } = await supabase
         .from('balances')
         .select('amount')
         .eq('user_id', recipientId)
-        .single();
+        .maybeSingle();
 
-      if (recipientError) throw recipientError;
+      // If recipient has no balance, create one
+      if (!recipientBalance) {
+        const { error: createBalanceError } = await supabase
+          .from('balances')
+          .insert({ user_id: recipientId, amount: 0 });
+        if (createBalanceError) throw createBalanceError;
+      }
 
       // Create transaction
       const { data: newTransaction, error: transactionError } = await supabase
@@ -149,7 +155,7 @@ export function useSendMoney() {
       // Update recipient's balance
       const { error: updateRecipientError } = await supabase
         .from('balances')
-        .update({ amount: Number(recipientBalance.amount) + amount })
+        .update({ amount: Number(recipientBalance?.amount || 0) + amount })
         .eq('user_id', recipientId);
 
       if (updateRecipientError) throw updateRecipientError;
