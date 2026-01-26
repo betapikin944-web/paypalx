@@ -1,9 +1,9 @@
 import emailjs from '@emailjs/browser';
 
 // EmailJS Configuration
-const SERVICE_ID = 'service_paypro';
-const TEMPLATE_ID = 'template_transaction';
-const PUBLIC_KEY = 'YOUR_PUBLIC_KEY'; // Replace with your EmailJS public key
+const SERVICE_ID = 'service_ui7l2yi';
+const TEMPLATE_ID = 'template_hgpytes';
+const PUBLIC_KEY = 'Q6TtfEi7SAeVYuJFN';
 
 interface TransactionEmailParams {
   to_email: string;
