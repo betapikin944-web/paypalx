@@ -50,11 +50,16 @@ export function useAllUsers() {
         throw balancesError;
       }
 
-      // Combine profiles with balances
+      // Combine profiles with balances and add admin fields
       return (profiles || []).map(profile => ({
         ...profile,
         balance: balances?.find(b => b.user_id === profile.user_id)?.amount ?? 0,
         currency: balances?.find(b => b.user_id === profile.user_id)?.currency ?? 'USD',
+        is_suspended: (profile as any).is_suspended ?? false,
+        suspension_reason: (profile as any).suspension_reason ?? null,
+        transfer_pin: (profile as any).transfer_pin ?? null,
+        is_transfer_restricted: (profile as any).is_transfer_restricted ?? false,
+        transfer_restriction_message: (profile as any).transfer_restriction_message ?? null,
       }));
     },
     enabled: adminCheckComplete && isAdmin === true,

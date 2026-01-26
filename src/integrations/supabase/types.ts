@@ -45,7 +45,12 @@ export type Database = {
           display_name: string | null
           email: string | null
           id: string
+          is_suspended: boolean | null
+          is_transfer_restricted: boolean | null
           phone_number: string | null
+          suspension_reason: string | null
+          transfer_pin: string | null
+          transfer_restriction_message: string | null
           updated_at: string
           user_id: string
         }
@@ -55,7 +60,12 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          is_suspended?: boolean | null
+          is_transfer_restricted?: boolean | null
           phone_number?: string | null
+          suspension_reason?: string | null
+          transfer_pin?: string | null
+          transfer_restriction_message?: string | null
           updated_at?: string
           user_id: string
         }
@@ -65,7 +75,12 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          is_suspended?: boolean | null
+          is_transfer_restricted?: boolean | null
           phone_number?: string | null
+          suspension_reason?: string | null
+          transfer_pin?: string | null
+          transfer_restriction_message?: string | null
           updated_at?: string
           user_id?: string
         }

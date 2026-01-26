@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Users, DollarSign, ArrowUpDown, Search, Edit2, Check, X, Plus } from 'lucide-react';
+import { ArrowLeft, Users, DollarSign, ArrowUpDown, Search, Edit2, Check, X, Plus, Ban, Lock, AlertTriangle, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,8 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useAllUsers, useAllTransactions, useIsAdmin } from '@/hooks/useAdmin';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,13 +30,27 @@ const AdminPage = () => {
   
   // Add funds modal state
   const [addFundsModal, setAddFundsModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<{ user_id: string; display_name: string | null; balance: number } | null>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
   const [addAmount, setAddAmount] = useState('');
   const [addDescription, setAddDescription] = useState('');
   const [isAddingFunds, setIsAddingFunds] = useState(false);
 
-  // Filter users - handle null values properly
-  // Filter users - handle null values properly and search by email
+  // Suspend modal state
+  const [suspendModal, setSuspendModal] = useState(false);
+  const [suspendReason, setSuspendReason] = useState('');
+  const [isSuspending, setIsSuspending] = useState(false);
+
+  // PIN modal state
+  const [pinModal, setPinModal] = useState(false);
+  const [newPin, setNewPin] = useState('');
+  const [isSettingPin, setIsSettingPin] = useState(false);
+
+  // Restriction modal state  
+  const [restrictModal, setRestrictModal] = useState(false);
+  const [restrictionMessage, setRestrictionMessage] = useState('');
+  const [isRestricting, setIsRestricting] = useState(false);
+
+  // Filter users
   const filteredUsers = users?.filter(user => {
     if (!searchTerm.trim()) return true;
     const search = searchTerm.toLowerCase();
@@ -73,7 +88,7 @@ const AdminPage = () => {
     setEditingUserId(null);
   };
 
-  const openAddFundsModal = (user: { user_id: string; display_name: string | null; balance: number }) => {
+  const openAddFundsModal = (user: any) => {
     setSelectedUser(user);
     setAddAmount('');
     setAddDescription('Admin deposit');
@@ -91,7 +106,6 @@ const AdminPage = () => {
 
     setIsAddingFunds(true);
     try {
-      // Update user balance
       const newBalance = selectedUser.balance + amount;
       const { error: balanceError } = await supabase
         .from('balances')
@@ -100,7 +114,6 @@ const AdminPage = () => {
 
       if (balanceError) throw balanceError;
 
-      // Create transaction record (admin as sender, user as recipient)
       const { error: transactionError } = await supabase
         .from('transactions')
         .insert({
@@ -114,7 +127,7 @@ const AdminPage = () => {
 
       if (transactionError) throw transactionError;
 
-      toast.success(`Successfully added $${amount.toFixed(2)} to ${selectedUser.display_name || 'user'}'s account`);
+      toast.success(`Successfully added $${amount.toFixed(2)} to ${selectedUser.display_name || selectedUser.email || 'user'}'s account`);
       queryClient.invalidateQueries({ queryKey: ['allUsers'] });
       queryClient.invalidateQueries({ queryKey: ['allTransactions'] });
       setAddFundsModal(false);
@@ -126,11 +139,113 @@ const AdminPage = () => {
     }
   };
 
+  // Suspend/Unsuspend user
+  const openSuspendModal = (user: any) => {
+    setSelectedUser(user);
+    setSuspendReason(user.suspension_reason || '');
+    setSuspendModal(true);
+  };
+
+  const handleToggleSuspend = async () => {
+    if (!selectedUser) return;
+    
+    setIsSuspending(true);
+    try {
+      const isSuspended = !(selectedUser as any).is_suspended;
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          is_suspended: isSuspended,
+          suspension_reason: isSuspended ? suspendReason : null
+        })
+        .eq('user_id', selectedUser.user_id);
+
+      if (error) throw error;
+
+      toast.success(isSuspended ? 'Account suspended' : 'Account unsuspended');
+      queryClient.invalidateQueries({ queryKey: ['allUsers'] });
+      setSuspendModal(false);
+    } catch (error) {
+      console.error('Error updating suspension:', error);
+      toast.error('Failed to update account status');
+    } finally {
+      setIsSuspending(false);
+    }
+  };
+
+  // Set Transfer PIN
+  const openPinModal = (user: any) => {
+    setSelectedUser(user);
+    setNewPin('');
+    setPinModal(true);
+  };
+
+  const handleSetPin = async () => {
+    if (!selectedUser) return;
+    
+    if (newPin && (newPin.length < 4 || newPin.length > 6 || !/^\d+$/.test(newPin))) {
+      toast.error('PIN must be 4-6 digits');
+      return;
+    }
+
+    setIsSettingPin(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ transfer_pin: newPin || null })
+        .eq('user_id', selectedUser.user_id);
+
+      if (error) throw error;
+
+      toast.success(newPin ? 'Transfer PIN set' : 'Transfer PIN removed');
+      queryClient.invalidateQueries({ queryKey: ['allUsers'] });
+      setPinModal(false);
+    } catch (error) {
+      console.error('Error setting PIN:', error);
+      toast.error('Failed to set PIN');
+    } finally {
+      setIsSettingPin(false);
+    }
+  };
+
+  // Restrict transfers
+  const openRestrictModal = (user: any) => {
+    setSelectedUser(user);
+    setRestrictionMessage((user as any).transfer_restriction_message || '');
+    setRestrictModal(true);
+  };
+
+  const handleToggleRestriction = async () => {
+    if (!selectedUser) return;
+    
+    setIsRestricting(true);
+    try {
+      const isRestricted = !(selectedUser as any).is_transfer_restricted;
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          is_transfer_restricted: isRestricted,
+          transfer_restriction_message: isRestricted ? restrictionMessage : null
+        })
+        .eq('user_id', selectedUser.user_id);
+
+      if (error) throw error;
+
+      toast.success(isRestricted ? 'Transfer restricted' : 'Transfer restriction removed');
+      queryClient.invalidateQueries({ queryKey: ['allUsers'] });
+      setRestrictModal(false);
+    } catch (error) {
+      console.error('Error updating restriction:', error);
+      toast.error('Failed to update restriction');
+    } finally {
+      setIsRestricting(false);
+    }
+  };
+
   const totalBalance = users?.reduce((sum, user) => sum + (user.balance || 0), 0) || 0;
   const totalTransactions = transactions?.length || 0;
   const totalVolume = transactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
 
-  // Get user display name for transactions
   const getUserName = (userId: string | null) => {
     if (!userId) return 'System';
     const user = users?.find(u => u.user_id === userId);
@@ -150,7 +265,10 @@ const AdminPage = () => {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl font-semibold">Admin Dashboard</h1>
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            <h1 className="text-xl font-semibold">Admin Dashboard</h1>
+          </div>
         </div>
       </div>
 
@@ -192,7 +310,7 @@ const AdminPage = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search users..."
+                placeholder="Search by name, email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -209,19 +327,30 @@ const AdminPage = () => {
             ) : (
               <div className="space-y-3">
                 {filteredUsers.map((user) => (
-                  <Card key={user.id}>
+                  <Card key={user.id} className={(user as any).is_suspended ? 'border-destructive/50 bg-destructive/5' : ''}>
                     <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-start gap-3">
                         <Avatar className="h-12 w-12">
                           <AvatarImage src={user.avatar_url || undefined} />
                           <AvatarFallback className="bg-primary/10 text-primary">
-                            {user.display_name?.charAt(0)?.toUpperCase() || 'U'}
+                            {user.display_name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">
-                            {user.display_name || user.email || 'Unnamed User'}
-                          </p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-medium truncate">
+                              {user.display_name || user.email?.split('@')[0] || 'Unnamed User'}
+                            </p>
+                            {(user as any).is_suspended && (
+                              <Badge variant="destructive" className="text-xs">Suspended</Badge>
+                            )}
+                            {(user as any).is_transfer_restricted && (
+                              <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800">Restricted</Badge>
+                            )}
+                            {(user as any).transfer_pin && (
+                              <Badge variant="outline" className="text-xs">PIN Set</Badge>
+                            )}
+                          </div>
                           <p className="text-sm text-muted-foreground truncate">
                             {user.email || user.phone_number || user.user_id.slice(0, 8) + '...'}
                           </p>
@@ -229,66 +358,97 @@ const AdminPage = () => {
                             Joined {format(new Date(user.created_at), 'MMM d, yyyy')}
                           </p>
                         </div>
-                        <div className="text-right">
-                          {editingUserId === user.user_id ? (
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="number"
-                                value={editBalance}
-                                onChange={(e) => setEditBalance(e.target.value)}
-                                className="w-24 h-8 text-right"
-                                autoFocus
-                              />
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 text-emerald-600"
-                                onClick={() => handleSaveBalance(user.user_id)}
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 text-destructive"
-                                onClick={() => setEditingUserId(null)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <div>
-                                <p className="font-semibold text-lg">
-                                  ${user.balance?.toFixed(2)}
-                                </p>
-                                <Badge variant="secondary" className="text-xs">
-                                  {user.currency}
-                                </Badge>
-                              </div>
-                              <div className="flex flex-col gap-1">
+                      </div>
+
+                      {/* Balance Section */}
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            {editingUserId === user.user_id ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-muted-foreground">$</span>
+                                <Input
+                                  type="number"
+                                  value={editBalance}
+                                  onChange={(e) => setEditBalance(e.target.value)}
+                                  className="w-24 h-8 text-right"
+                                  autoFocus
+                                />
                                 <Button
                                   size="icon"
                                   variant="ghost"
                                   className="h-8 w-8 text-emerald-600"
-                                  onClick={() => openAddFundsModal(user)}
-                                  title="Add Funds"
+                                  onClick={() => handleSaveBalance(user.user_id)}
                                 >
-                                  <Plus className="h-4 w-4" />
+                                  <Check className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   size="icon"
                                   variant="ghost"
-                                  className="h-8 w-8"
-                                  onClick={() => handleEditBalance(user.user_id, user.balance)}
-                                  title="Edit Balance"
+                                  className="h-8 w-8 text-destructive"
+                                  onClick={() => setEditingUserId(null)}
                                 >
-                                  <Edit2 className="h-4 w-4" />
+                                  <X className="h-4 w-4" />
                                 </Button>
                               </div>
-                            </div>
-                          )}
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold text-lg">${user.balance?.toFixed(2)}</p>
+                                <Badge variant="secondary" className="text-xs">{user.currency}</Badge>
+                              </div>
+                            )}
+                          </div>
                         </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="mt-3 grid grid-cols-4 gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                          onClick={() => openAddFundsModal(user)}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditBalance(user.user_id, user.balance)}
+                        >
+                          <Edit2 className="h-3 w-3 mr-1" />
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                          onClick={() => openRestrictModal(user)}
+                        >
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          {(user as any).is_transfer_restricted ? 'Unrestr' : 'Restrict'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={(user as any).is_suspended ? 'text-emerald-600 border-emerald-200' : 'text-destructive border-destructive/30'}
+                          onClick={() => openSuspendModal(user)}
+                        >
+                          <Ban className="h-3 w-3 mr-1" />
+                          {(user as any).is_suspended ? 'Activate' : 'Suspend'}
+                        </Button>
+                      </div>
+                      <div className="mt-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => openPinModal(user)}
+                        >
+                          <Lock className="h-3 w-3 mr-1" />
+                          {(user as any).transfer_pin ? 'Change PIN' : 'Set Transfer PIN'}
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -363,11 +523,11 @@ const AdminPage = () => {
             <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
               <Avatar className="h-10 w-10">
                 <AvatarFallback className="bg-primary/10 text-primary">
-                  {selectedUser?.display_name?.charAt(0)?.toUpperCase() || 'U'}
+                  {selectedUser?.display_name?.charAt(0)?.toUpperCase() || selectedUser?.email?.charAt(0)?.toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-medium">{selectedUser?.display_name || 'Unnamed User'}</p>
+                <p className="font-medium">{selectedUser?.display_name || selectedUser?.email || 'Unnamed User'}</p>
                 <p className="text-sm text-muted-foreground">
                   Current balance: ${selectedUser?.balance?.toFixed(2)}
                 </p>
@@ -401,6 +561,158 @@ const AdminPage = () => {
             </Button>
             <Button onClick={handleAddFunds} disabled={isAddingFunds}>
               {isAddingFunds ? 'Adding...' : 'Add Funds'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Suspend Dialog */}
+      <Dialog open={suspendModal} onOpenChange={setSuspendModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{(selectedUser as any)?.is_suspended ? 'Unsuspend Account' : 'Suspend Account'}</DialogTitle>
+            <DialogDescription>
+              {(selectedUser as any)?.is_suspended 
+                ? 'This will reactivate the user account and allow them to use the platform.'
+                : 'Suspending will prevent the user from sending or receiving money.'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+              <Avatar className="h-10 w-10">
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {selectedUser?.display_name?.charAt(0)?.toUpperCase() || selectedUser?.email?.charAt(0)?.toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-medium">{selectedUser?.display_name || selectedUser?.email || 'Unnamed User'}</p>
+                <p className="text-sm text-muted-foreground">{selectedUser?.email}</p>
+              </div>
+            </div>
+            {!(selectedUser as any)?.is_suspended && (
+              <div className="space-y-2">
+                <Label htmlFor="suspendReason">Reason for Suspension</Label>
+                <Textarea
+                  id="suspendReason"
+                  placeholder="Enter reason for suspension..."
+                  value={suspendReason}
+                  onChange={(e) => setSuspendReason(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSuspendModal(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleToggleSuspend} 
+              disabled={isSuspending}
+              variant={(selectedUser as any)?.is_suspended ? 'default' : 'destructive'}
+            >
+              {isSuspending ? 'Processing...' : ((selectedUser as any)?.is_suspended ? 'Unsuspend' : 'Suspend Account')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* PIN Dialog */}
+      <Dialog open={pinModal} onOpenChange={setPinModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Transfer PIN</DialogTitle>
+            <DialogDescription>
+              Set a 4-6 digit PIN that the user must enter before sending money.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+              <Avatar className="h-10 w-10">
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {selectedUser?.display_name?.charAt(0)?.toUpperCase() || selectedUser?.email?.charAt(0)?.toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-medium">{selectedUser?.display_name || selectedUser?.email || 'Unnamed User'}</p>
+                <p className="text-sm text-muted-foreground">
+                  {(selectedUser as any)?.transfer_pin ? 'Current PIN: ****' : 'No PIN set'}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="newPin">New PIN (4-6 digits)</Label>
+              <Input
+                id="newPin"
+                type="password"
+                placeholder="Enter PIN..."
+                value={newPin}
+                onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                maxLength={6}
+              />
+              <p className="text-xs text-muted-foreground">Leave empty to remove PIN</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPinModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSetPin} disabled={isSettingPin}>
+              {isSettingPin ? 'Saving...' : (newPin ? 'Set PIN' : 'Remove PIN')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Restriction Dialog */}
+      <Dialog open={restrictModal} onOpenChange={setRestrictModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{(selectedUser as any)?.is_transfer_restricted ? 'Remove Transfer Restriction' : 'Restrict Transfers'}</DialogTitle>
+            <DialogDescription>
+              {(selectedUser as any)?.is_transfer_restricted 
+                ? 'This will allow the user to send money again.'
+                : 'The user will see this message when they try to send money.'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+              <Avatar className="h-10 w-10">
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {selectedUser?.display_name?.charAt(0)?.toUpperCase() || selectedUser?.email?.charAt(0)?.toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-medium">{selectedUser?.display_name || selectedUser?.email || 'Unnamed User'}</p>
+                <p className="text-sm text-muted-foreground">{selectedUser?.email}</p>
+              </div>
+            </div>
+            {!(selectedUser as any)?.is_transfer_restricted && (
+              <div className="space-y-2">
+                <Label htmlFor="restrictionMessage">Restriction Message</Label>
+                <Textarea
+                  id="restrictionMessage"
+                  placeholder="Your account has been restricted. Please contact support."
+                  value={restrictionMessage}
+                  onChange={(e) => setRestrictionMessage(e.target.value)}
+                  rows={3}
+                />
+                <p className="text-xs text-muted-foreground">This message will be shown to the user when they try to send money</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRestrictModal(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleToggleRestriction} 
+              disabled={isRestricting}
+              variant={(selectedUser as any)?.is_transfer_restricted ? 'default' : 'destructive'}
+            >
+              {isRestricting ? 'Processing...' : ((selectedUser as any)?.is_transfer_restricted ? 'Remove Restriction' : 'Restrict Transfers')}
             </Button>
           </DialogFooter>
         </DialogContent>

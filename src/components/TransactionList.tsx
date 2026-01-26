@@ -67,7 +67,7 @@ export function TransactionList() {
             const otherParty = isSent 
               ? transaction.recipient_profile 
               : transaction.sender_profile;
-            const otherPartyName = otherParty?.display_name || 
+            const otherPartyName = otherParty?.display_name || otherParty?.email?.split('@')[0] || 
               (transaction.description?.includes('Admin') ? 'Admin' : 'User');
             const actionLabel = isSent ? 'Sent to' : 'Received from';
 

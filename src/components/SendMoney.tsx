@@ -1,25 +1,69 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Search, X, Loader2, Check } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, Search, X, Loader2, Lock, AlertTriangle } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useSearchProfiles, Profile } from "@/hooks/useProfile";
 import { useSendMoney } from "@/hooks/useTransactions";
 import { useBalance } from "@/hooks/useBalance";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Receipt } from "./Receipt";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
+import { toast } from "sonner";
 
 export function SendMoney() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [amount, setAmount] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContact, setSelectedContact] = useState<Profile | null>(null);
-  const [step, setStep] = useState<"select" | "amount" | "success">("select");
+  const [step, setStep] = useState<"select" | "amount" | "pin" | "success">("select");
   const [completedTransaction, setCompletedTransaction] = useState<any>(null);
+  
+  // Restriction and PIN state
+  const [isRestricted, setIsRestricted] = useState(false);
+  const [restrictionMessage, setRestrictionMessage] = useState("");
+  const [requiresPin, setRequiresPin] = useState(false);
+  const [userPin, setUserPin] = useState("");
+  const [enteredPin, setEnteredPin] = useState("");
+  const [showRestrictionModal, setShowRestrictionModal] = useState(false);
 
   const { data: searchResults, isLoading: isSearching } = useSearchProfiles(searchTerm);
   const { data: balance } = useBalance();
   const sendMoney = useSendMoney();
+
+  // Check user restrictions on mount
+  useEffect(() => {
+    const checkRestrictions = async () => {
+      if (!user) return;
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_suspended, is_transfer_restricted, transfer_restriction_message, transfer_pin')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profile) {
+        if ((profile as any).is_suspended) {
+          setIsRestricted(true);
+          setRestrictionMessage("Your account has been suspended. Please contact support.");
+          setShowRestrictionModal(true);
+        } else if ((profile as any).is_transfer_restricted) {
+          setIsRestricted(true);
+          setRestrictionMessage((profile as any).transfer_restriction_message || "Your transfers have been restricted. Please contact support.");
+          setShowRestrictionModal(true);
+        }
+        if ((profile as any).transfer_pin) {
+          setRequiresPin(true);
+          setUserPin((profile as any).transfer_pin);
+        }
+      }
+    };
+
+    checkRestrictions();
+  }, [user]);
 
   const handleNumberPress = (num: string) => {
     if (num === "." && amount.includes(".")) return;
@@ -41,6 +85,12 @@ export function SendMoney() {
     
     const amountNum = parseFloat(amount);
     if (amountNum <= 0) return;
+
+    // Check if PIN is required
+    if (requiresPin && step === "amount") {
+      setStep("pin");
+      return;
+    }
     
     try {
       await sendMoney.mutateAsync({
@@ -57,13 +107,22 @@ export function SendMoney() {
         description: `Payment to ${selectedContact.display_name || selectedContact.email || 'user'}`,
         created_at: new Date().toISOString(),
         status: "completed",
-        recipientName: selectedContact.display_name,
+        recipientName: selectedContact.display_name || selectedContact.email?.split('@')[0],
         recipientEmail: selectedContact.email,
       });
       setStep("success");
     } catch (error) {
       // Error handled by mutation
     }
+  };
+
+  const handlePinSubmit = () => {
+    if (enteredPin !== userPin) {
+      toast.error("Incorrect PIN. Please try again.");
+      setEnteredPin("");
+      return;
+    }
+    handlePay();
   };
 
   const getInitials = (name: string | null, email: string | null) => {
@@ -86,17 +145,41 @@ export function SendMoney() {
       animate={{ opacity: 1 }}
       className="min-h-screen flex flex-col bg-background"
     >
+      {/* Restriction Modal */}
+      <Dialog open={showRestrictionModal} onOpenChange={setShowRestrictionModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Transfer Restricted
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-muted-foreground">{restrictionMessage}</p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => navigate('/')}>
+              Go Back
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Header */}
       <div className="flex items-center gap-4 p-4 bg-primary text-primary-foreground">
         <motion.button
           whileTap={{ scale: 0.9 }}
-          onClick={() => step === "amount" ? setStep("select") : navigate("/")}
+          onClick={() => {
+            if (step === "pin") setStep("amount");
+            else if (step === "amount") setStep("select");
+            else navigate("/");
+          }}
           className="p-2 rounded-full hover:bg-white/10 transition-colors"
         >
           <ArrowLeft className="h-5 w-5" />
         </motion.button>
         <h1 className="text-xl font-semibold">
-          {step === "select" ? "Send Money" : `To ${selectedContact?.display_name || selectedContact?.email || 'User'}`}
+          {step === "select" ? "Send Money" : step === "pin" ? "Enter PIN" : `To ${selectedContact?.display_name || selectedContact?.email?.split('@')[0] || 'User'}`}
         </h1>
       </div>
 
@@ -118,6 +201,7 @@ export function SendMoney() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-12 h-14 bg-muted border-0 rounded-2xl text-base"
+                  disabled={isRestricted}
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-2 text-center">
@@ -143,7 +227,8 @@ export function SendMoney() {
                         transition={{ delay: index * 0.05 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleContactSelect(profile)}
-                        className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all"
+                        disabled={isRestricted}
+                        className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all disabled:opacity-50"
                       >
                         <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
                           {profile.avatar_url ? (
@@ -229,6 +314,11 @@ export function SendMoney() {
                   Insufficient balance
                 </p>
               )}
+              {requiresPin && (
+                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                  <Lock className="h-3 w-3" /> PIN required for this transfer
+                </p>
+              )}
             </div>
 
             {/* Numpad */}
@@ -264,6 +354,37 @@ export function SendMoney() {
                 )}
               </Button>
             </div>
+          </motion.div>
+        ) : step === "pin" ? (
+          <motion.div
+            key="pin"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="flex-1 flex flex-col items-center justify-center p-6"
+          >
+            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+              <Lock className="h-10 w-10 text-primary" />
+            </div>
+            <h2 className="text-xl font-semibold mb-2">Enter Transfer PIN</h2>
+            <p className="text-muted-foreground text-center mb-6">
+              Enter your PIN to confirm sending ${amount} to {selectedContact?.display_name || selectedContact?.email?.split('@')[0]}
+            </p>
+            <Input
+              type="password"
+              value={enteredPin}
+              onChange={(e) => setEnteredPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="Enter PIN"
+              className="text-center text-2xl tracking-widest max-w-[200px] mb-6"
+              maxLength={6}
+            />
+            <Button
+              onClick={handlePinSubmit}
+              disabled={enteredPin.length < 4 || sendMoney.isPending}
+              className="w-full max-w-[200px] h-14 rounded-full"
+            >
+              {sendMoney.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirm'}
+            </Button>
           </motion.div>
         ) : null}
       </AnimatePresence>

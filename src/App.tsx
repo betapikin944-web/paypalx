@@ -8,6 +8,9 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import Index from "./pages/Index";
 import SendPage from "./pages/SendPage";
+import RequestPage from "./pages/RequestPage";
+import ScanPage from "./pages/ScanPage";
+import PayPage from "./pages/PayPage";
 import CardPage from "./pages/CardPage";
 import InvestPage from "./pages/InvestPage";
 import ActivityPage from "./pages/ActivityPage";
@@ -35,7 +38,9 @@ const App = () => (
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/send" element={<ProtectedRoute><SendPage /></ProtectedRoute>} />
-              <Route path="/request" element={<ProtectedRoute><SendPage /></ProtectedRoute>} />
+              <Route path="/request" element={<ProtectedRoute><RequestPage /></ProtectedRoute>} />
+              <Route path="/scan" element={<ProtectedRoute><ScanPage /></ProtectedRoute>} />
+              <Route path="/pay" element={<ProtectedRoute><PayPage /></ProtectedRoute>} />
               <Route path="/card" element={<ProtectedRoute><CardPage /></ProtectedRoute>} />
               <Route path="/invest" element={<ProtectedRoute><InvestPage /></ProtectedRoute>} />
               <Route path="/activity" element={<ProtectedRoute><ActivityPage /></ProtectedRoute>} />
