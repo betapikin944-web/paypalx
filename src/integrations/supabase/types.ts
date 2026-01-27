@@ -38,6 +38,121 @@ export type Database = {
         }
         Relationships: []
       }
+      card_transactions: {
+        Row: {
+          amount: number
+          card_id: string
+          created_at: string
+          currency: string
+          id: string
+          merchant_category: string | null
+          merchant_name: string
+          status: string
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          card_id: string
+          created_at?: string
+          currency?: string
+          id?: string
+          merchant_category?: string | null
+          merchant_name: string
+          status?: string
+          transaction_type?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          card_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          merchant_category?: string | null
+          merchant_name?: string
+          status?: string
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_transactions_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "user_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      physical_card_requests: {
+        Row: {
+          address_line1: string
+          address_line2: string | null
+          card_id: string
+          city: string
+          country: string
+          created_at: string
+          delivered_at: string | null
+          full_name: string
+          id: string
+          postal_code: string
+          requested_at: string
+          shipped_at: string | null
+          state: string
+          status: string
+          tracking_number: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address_line1: string
+          address_line2?: string | null
+          card_id: string
+          city: string
+          country?: string
+          created_at?: string
+          delivered_at?: string | null
+          full_name: string
+          id?: string
+          postal_code: string
+          requested_at?: string
+          shipped_at?: string | null
+          state: string
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address_line1?: string
+          address_line2?: string | null
+          card_id?: string
+          city?: string
+          country?: string
+          created_at?: string
+          delivered_at?: string | null
+          full_name?: string
+          id?: string
+          postal_code?: string
+          requested_at?: string
+          shipped_at?: string | null
+          state?: string
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "physical_card_requests_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "user_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

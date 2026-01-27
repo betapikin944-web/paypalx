@@ -11,7 +11,9 @@ import {
   Plus, 
   ArrowUpDown,
   Unlock,
-  Flame
+  Flame,
+  Package,
+  History
 } from "lucide-react";
 import { useCard } from "@/hooks/useCard";
 import { useBalance } from "@/hooks/useBalance";
@@ -25,6 +27,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { PhysicalCardRequestDialog } from "@/components/card/PhysicalCardRequestDialog";
+import { CardTransactionList } from "@/components/card/CardTransactionList";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function CardPage() {
   const { card, isLoading, createCard, isCreating, toggleLock, toggleFreeze } = useCard();
@@ -33,6 +38,7 @@ export default function CardPage() {
   
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [showPhysicalCardDialog, setShowPhysicalCardDialog] = useState(false);
   const [cardHolderName, setCardHolderName] = useState('');
   const [showCardNumber, setShowCardNumber] = useState(false);
   const [showCvv, setShowCvv] = useState(false);
@@ -85,12 +91,9 @@ export default function CardPage() {
       disabled: !card
     },
     { 
-      icon: CreditCard, 
-      label: "Replace",
-      onClick: () => toast({
-        title: "Replace Card",
-        description: "Card replacement feature coming soon.",
-      }),
+      icon: Package, 
+      label: "Get Physical",
+      onClick: () => setShowPhysicalCardDialog(true),
       disabled: !card
     },
   ];
@@ -126,7 +129,7 @@ export default function CardPage() {
           </p>
           <Button
             onClick={() => setShowCreateDialog(true)}
-            className="w-full h-14 bg-primary hover:bg-primary-light text-white rounded-full text-lg font-semibold"
+            className="w-full h-14 bg-primary hover:bg-primary-light text-primary-foreground rounded-full text-lg font-semibold"
           >
             Get Your Card
           </Button>
@@ -158,7 +161,7 @@ export default function CardPage() {
               <Button
                 onClick={handleCreateCard}
                 disabled={isCreating}
-                className="w-full h-12 bg-primary hover:bg-primary-light text-white rounded-full font-semibold"
+                className="w-full h-12 bg-primary hover:bg-primary-light text-primary-foreground rounded-full font-semibold"
               >
                 {isCreating ? 'Creating...' : 'Create Card'}
               </Button>
@@ -180,7 +183,7 @@ export default function CardPage() {
       </div>
 
       {/* Card Display */}
-      <div className="px-4 mb-8 relative">
+      <div className="px-4 mb-6 relative">
         <CashCard 
           lastFour={card.last_four} 
           cardHolder={card.card_holder_name} 
@@ -238,33 +241,51 @@ export default function CardPage() {
         </div>
       </motion.div>
 
-      {/* Card Actions */}
+      {/* Tabs for Settings and Transactions */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
         className="mx-4"
       >
-        <h2 className="text-lg font-semibold text-foreground mb-4">Card Settings</h2>
-        <div className="grid grid-cols-2 gap-3">
-          {cardActions.map((action, index) => (
-            <motion.button
-              key={action.label}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.35 + index * 0.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={action.onClick}
-              disabled={action.disabled}
-              className="p-4 rounded-xl bg-card border border-border flex items-center gap-3 hover:bg-muted transition-colors disabled:opacity-50"
-            >
-              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                <action.icon className="h-5 w-5 text-foreground" />
-              </div>
-              <span className="font-medium text-foreground">{action.label}</span>
-            </motion.button>
-          ))}
-        </div>
+        <Tabs defaultValue="settings" className="w-full">
+          <TabsList className="w-full mb-4">
+            <TabsTrigger value="settings" className="flex-1">
+              <CreditCard className="w-4 h-4 mr-2" />
+              Settings
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex-1">
+              <History className="w-4 h-4 mr-2" />
+              Purchases
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="settings">
+            <div className="grid grid-cols-2 gap-3">
+              {cardActions.map((action, index) => (
+                <motion.button
+                  key={action.label}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.35 + index * 0.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={action.onClick}
+                  disabled={action.disabled}
+                  className="p-4 rounded-xl bg-card border border-border flex items-center gap-3 hover:bg-muted transition-colors disabled:opacity-50"
+                >
+                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                    <action.icon className="h-5 w-5 text-foreground" />
+                  </div>
+                  <span className="font-medium text-foreground text-left">{action.label}</span>
+                </motion.button>
+              ))}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="history">
+            <CardTransactionList cardId={card.id} />
+          </TabsContent>
+        </Tabs>
       </motion.div>
 
       {/* Show Details Dialog */}
@@ -327,6 +348,14 @@ export default function CardPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Physical Card Request Dialog */}
+      <PhysicalCardRequestDialog
+        open={showPhysicalCardDialog}
+        onOpenChange={setShowPhysicalCardDialog}
+        cardId={card.id}
+        cardHolderName={card.card_holder_name}
+      />
 
       <BottomNav />
     </div>
