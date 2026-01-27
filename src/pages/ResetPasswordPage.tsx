@@ -1,15 +1,14 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Eye, EyeOff, Check } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Check, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 
-const signupSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+const passwordSchema = z.object({
   password: z.string()
     .min(8, 'Password must be at least 8 characters')
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
@@ -20,18 +19,33 @@ const signupSchema = z.object({
   path: ["confirmPassword"],
 });
 
-const SignupPage = () => {
+const ResetPasswordPage = () => {
   const navigate = useNavigate();
-  const { signUp } = useAuth();
   const { toast } = useToast();
   
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({});
+  const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({});
+  const [isValidSession, setIsValidSession] = useState(false);
+
+  useEffect(() => {
+    // Check if we have a valid recovery session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setIsValidSession(true);
+      } else {
+        toast({
+          title: "Invalid or expired link",
+          description: "Please request a new password reset link.",
+          variant: "destructive",
+        });
+        navigate('/forgot-password');
+      }
+    });
+  }, [navigate, toast]);
 
   const passwordRequirements = [
     { label: 'At least 8 characters', met: password.length >= 8 },
@@ -40,16 +54,14 @@ const SignupPage = () => {
     { label: 'Passwords match', met: password.length > 0 && password === confirmPassword },
   ];
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
-    // Validate input
-    const result = signupSchema.safeParse({ email, password, confirmPassword });
+    const result = passwordSchema.safeParse({ password, confirmPassword });
     if (!result.success) {
-      const fieldErrors: { email?: string; password?: string; confirmPassword?: string } = {};
+      const fieldErrors: { password?: string; confirmPassword?: string } = {};
       result.error.errors.forEach((err) => {
-        if (err.path[0] === 'email') fieldErrors.email = err.message;
         if (err.path[0] === 'password') fieldErrors.password = err.message;
         if (err.path[0] === 'confirmPassword') fieldErrors.confirmPassword = err.message;
       });
@@ -58,31 +70,33 @@ const SignupPage = () => {
     }
 
     setLoading(true);
-    const { error } = await signUp(email, password);
+    
+    const { error } = await supabase.auth.updateUser({ password });
+    
     setLoading(false);
 
     if (error) {
-      if (error.message.includes('already registered')) {
-        toast({
-          title: "Account exists",
-          description: "This email is already registered. Please log in instead.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Sign up failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     } else {
       toast({
-        title: "Account created!",
-        description: "Welcome to PayPal. You're now logged in.",
+        title: "Password updated!",
+        description: "Your password has been successfully reset.",
       });
       navigate('/');
     }
   };
+
+  if (!isValidSession) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -93,7 +107,7 @@ const SignupPage = () => {
         className="p-4 flex items-center"
       >
         <button 
-          onClick={() => navigate('/welcome')}
+          onClick={() => navigate('/login')}
           className="p-2 hover:bg-muted rounded-full transition-colors"
         >
           <ArrowLeft className="w-6 h-6 text-foreground" />
@@ -105,11 +119,11 @@ const SignupPage = () => {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.1 }}
-        className="flex justify-center py-4"
+        className="flex justify-center py-8"
       >
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-xl">P</span>
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+            <Lock className="w-8 h-8 text-primary" />
           </div>
         </div>
       </motion.div>
@@ -119,38 +133,22 @@ const SignupPage = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="flex-1 px-6 pb-6 overflow-y-auto"
+        className="flex-1 px-6"
       >
-        <h1 className="text-2xl font-bold text-foreground mb-2">Create your account</h1>
-        <p className="text-muted-foreground mb-4">Join millions who trust PayPal for payments.</p>
+        <h1 className="text-2xl font-bold text-foreground mb-2">Reset password</h1>
+        <p className="text-muted-foreground mb-8">Create a new secure password for your account.</p>
 
-        <form onSubmit={handleSignup} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              Email address
-            </label>
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              className={`h-14 rounded-xl ${errors.email ? 'border-destructive' : ''}`}
-            />
-            {errors.email && (
-              <p className="text-destructive text-sm mt-1">{errors.email}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Create password
+              New password
             </label>
             <div className="relative">
               <Input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Create a secure password"
+                placeholder="Enter new password"
                 className={`h-14 rounded-xl pr-12 ${errors.password ? 'border-destructive' : ''}`}
               />
               <button
@@ -175,7 +173,7 @@ const SignupPage = () => {
                 type={showConfirmPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm your password"
+                placeholder="Confirm new password"
                 className={`h-14 rounded-xl pr-12 ${errors.confirmPassword ? 'border-destructive' : ''}`}
               />
               <button
@@ -212,24 +210,12 @@ const SignupPage = () => {
             disabled={loading}
             className="w-full h-14 bg-primary hover:bg-primary-light text-white rounded-full text-lg font-semibold"
           >
-            {loading ? 'Creating account...' : 'Sign Up'}
+            {loading ? 'Updating...' : 'Reset Password'}
           </Button>
         </form>
-
-        <div className="mt-4 text-center">
-          <Link to="/login" className="text-primary hover:underline font-medium">
-            Already have an account? Log in
-          </Link>
-        </div>
-
-        <p className="mt-4 text-xs text-muted-foreground text-center">
-          By signing up, you agree to our{' '}
-          <span className="text-primary">Terms of Service</span> and{' '}
-          <span className="text-primary">Privacy Policy</span>.
-        </p>
       </motion.div>
     </div>
   );
 };
 
-export default SignupPage;
+export default ResetPasswordPage;

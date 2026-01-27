@@ -119,6 +119,51 @@ export type Database = {
         }
         Relationships: []
       }
+      user_cards: {
+        Row: {
+          card_holder_name: string
+          card_number: string
+          created_at: string
+          cvv: string
+          expiry_month: string
+          expiry_year: string
+          id: string
+          is_frozen: boolean
+          is_locked: boolean
+          last_four: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          card_holder_name: string
+          card_number?: string
+          created_at?: string
+          cvv?: string
+          expiry_month?: string
+          expiry_year?: string
+          id?: string
+          is_frozen?: boolean
+          is_locked?: boolean
+          last_four?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          card_holder_name?: string
+          card_number?: string
+          created_at?: string
+          cvv?: string
+          expiry_month?: string
+          expiry_year?: string
+          id?: string
+          is_frozen?: boolean
+          is_locked?: boolean
+          last_four?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
