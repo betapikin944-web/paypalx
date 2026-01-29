@@ -13,7 +13,8 @@ import {
   Unlock,
   Flame,
   Package,
-  History
+  History,
+  Loader2
 } from "lucide-react";
 import { useCard } from "@/hooks/useCard";
 import { useBalance } from "@/hooks/useBalance";
@@ -25,23 +26,35 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { PhysicalCardRequestDialog } from "@/components/card/PhysicalCardRequestDialog";
 import { CardTransactionList } from "@/components/card/CardTransactionList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 
 export default function CardPage() {
   const { card, isLoading, createCard, isCreating, toggleLock, toggleFreeze } = useCard();
   const { data: balance } = useBalance();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showPhysicalCardDialog, setShowPhysicalCardDialog] = useState(false);
+  const [showAddCashDialog, setShowAddCashDialog] = useState(false);
+  const [showCashOutDialog, setShowCashOutDialog] = useState(false);
   const [cardHolderName, setCardHolderName] = useState('');
   const [showCardNumber, setShowCardNumber] = useState(false);
   const [showCvv, setShowCvv] = useState(false);
+  const [cashAmount, setCashAmount] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleCreateCard = () => {
     if (!cardHolderName.trim()) {
@@ -57,18 +70,146 @@ export default function CardPage() {
     setCardHolderName('');
   };
 
-  const handleAddCash = () => {
-    toast({
-      title: "Add Cash",
-      description: "To add cash to your card, transfer funds from your PayPal balance.",
-    });
+  const handleAddCash = async () => {
+    if (!user || !cashAmount) return;
+    
+    const amount = parseFloat(cashAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        title: "Invalid amount",
+        description: "Please enter a valid amount greater than 0.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // Get current balance
+      const { data: currentBalance, error: fetchError } = await supabase
+        .from('balances')
+        .select('amount')
+        .eq('user_id', user.id)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+
+      const currentAmount = currentBalance?.amount || 0;
+      const newAmount = currentAmount + amount;
+
+      // Update or insert balance
+      if (currentBalance) {
+        const { error } = await supabase
+          .from('balances')
+          .update({ amount: newAmount })
+          .eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('balances')
+          .insert({ user_id: user.id, amount: newAmount });
+        if (error) throw error;
+      }
+
+      // Log as card transaction
+      if (card) {
+        await supabase.from('card_transactions').insert({
+          user_id: user.id,
+          card_id: card.id,
+          amount: amount,
+          merchant_name: 'Cash Deposit',
+          merchant_category: 'deposit',
+          transaction_type: 'deposit',
+          status: 'completed'
+        });
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['balance'] });
+      queryClient.invalidateQueries({ queryKey: ['cardTransactions'] });
+      
+      toast({
+        title: "Cash Added!",
+        description: `$${amount.toFixed(2)} has been added to your card.`,
+      });
+      setShowAddCashDialog(false);
+      setCashAmount('');
+    } catch (error) {
+      console.error('Error adding cash:', error);
+      toast({
+        title: "Failed to add cash",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const handleCashOut = () => {
-    toast({
-      title: "Cash Out",
-      description: "Cash out feature coming soon. Your card balance syncs with your PayPal balance.",
-    });
+  const handleCashOut = async () => {
+    if (!user || !balance || !cashAmount) return;
+    
+    const amount = parseFloat(cashAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        title: "Invalid amount",
+        description: "Please enter a valid amount greater than 0.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (amount > Number(balance.amount)) {
+      toast({
+        title: "Insufficient balance",
+        description: "You don't have enough balance to cash out this amount.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const newAmount = Number(balance.amount) - amount;
+
+      const { error } = await supabase
+        .from('balances')
+        .update({ amount: newAmount })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Log as card transaction
+      if (card) {
+        await supabase.from('card_transactions').insert({
+          user_id: user.id,
+          card_id: card.id,
+          amount: amount,
+          merchant_name: 'Cash Withdrawal',
+          merchant_category: 'withdrawal',
+          transaction_type: 'withdrawal',
+          status: 'completed'
+        });
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['balance'] });
+      queryClient.invalidateQueries({ queryKey: ['cardTransactions'] });
+      
+      toast({
+        title: "Cash Out Successful!",
+        description: `$${amount.toFixed(2)} has been cashed out.`,
+      });
+      setShowCashOutDialog(false);
+      setCashAmount('');
+    } catch (error) {
+      console.error('Error cashing out:', error);
+      toast({
+        title: "Failed to cash out",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const cardActions = [
@@ -198,7 +339,7 @@ export default function CardPage() {
                 </div>
               )}
               {card.is_frozen && !card.is_locked && (
-                <div className="flex items-center gap-2 text-blue-500">
+                <div className="flex items-center gap-2 text-primary">
                   <Snowflake className="w-6 h-6" />
                   <span className="font-semibold">Card Frozen</span>
                 </div>
@@ -224,7 +365,7 @@ export default function CardPage() {
         <div className="flex gap-3">
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={handleAddCash}
+            onClick={() => setShowAddCashDialog(true)}
             className="flex-1 h-12 rounded-xl gradient-primary font-semibold text-primary-foreground flex items-center justify-center gap-2"
           >
             <Plus className="h-5 w-5" />
@@ -232,7 +373,7 @@ export default function CardPage() {
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={handleCashOut}
+            onClick={() => setShowCashOutDialog(true)}
             className="flex-1 h-12 rounded-xl bg-muted font-semibold flex items-center justify-center gap-2 text-foreground"
           >
             <ArrowUpDown className="h-5 w-5" />
@@ -356,6 +497,101 @@ export default function CardPage() {
         cardId={card.id}
         cardHolderName={card.card_holder_name}
       />
+
+      {/* Add Cash Dialog */}
+      <Dialog open={showAddCashDialog} onOpenChange={setShowAddCashDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Cash</DialogTitle>
+            <DialogDescription>
+              Add funds to your Cash Card balance.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="p-4 rounded-xl bg-muted">
+              <p className="text-xs text-muted-foreground mb-1">Current Balance</p>
+              <p className="text-2xl font-bold text-foreground">
+                ${balance?.amount?.toFixed(2) || '0.00'}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Amount to Add</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-muted-foreground">$</span>
+                <Input
+                  type="number"
+                  value={cashAmount}
+                  onChange={(e) => setCashAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="h-14 pl-10 text-xl rounded-xl"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddCashDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddCash} disabled={isProcessing || !cashAmount}>
+              {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add Cash'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cash Out Dialog */}
+      <Dialog open={showCashOutDialog} onOpenChange={setShowCashOutDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cash Out</DialogTitle>
+            <DialogDescription>
+              Withdraw funds from your Cash Card.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="p-4 rounded-xl bg-muted">
+              <p className="text-xs text-muted-foreground mb-1">Available Balance</p>
+              <p className="text-2xl font-bold text-foreground">
+                ${balance?.amount?.toFixed(2) || '0.00'}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Amount to Withdraw</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-muted-foreground">$</span>
+                <Input
+                  type="number"
+                  value={cashAmount}
+                  onChange={(e) => setCashAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="h-14 pl-10 text-xl rounded-xl"
+                  min="0"
+                  max={balance?.amount || 0}
+                  step="0.01"
+                />
+              </div>
+              {parseFloat(cashAmount) > Number(balance?.amount || 0) && (
+                <p className="text-sm text-destructive mt-1">
+                  Insufficient balance
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCashOutDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCashOut} 
+              disabled={isProcessing || !cashAmount || parseFloat(cashAmount) > Number(balance?.amount || 0)}
+            >
+              {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Cash Out'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>

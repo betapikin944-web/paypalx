@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Users, DollarSign, ArrowUpDown, Search, Edit2, Check, X, Plus, Ban, Lock, AlertTriangle, Shield } from 'lucide-react';
+import { ArrowLeft, Users, DollarSign, ArrowUpDown, Search, Edit2, Check, X, Plus, Ban, Lock, AlertTriangle, Shield, ShieldCheck, ShieldOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,6 +49,10 @@ const AdminPage = () => {
   const [restrictModal, setRestrictModal] = useState(false);
   const [restrictionMessage, setRestrictionMessage] = useState('');
   const [isRestricting, setIsRestricting] = useState(false);
+
+  // Promote admin modal state
+  const [promoteModal, setPromoteModal] = useState(false);
+  const [isPromoting, setIsPromoting] = useState(false);
 
   // Filter users
   const filteredUsers = users?.filter(user => {
@@ -242,6 +246,50 @@ const AdminPage = () => {
     }
   };
 
+  // Promote/Demote admin
+  const openPromoteModal = (user: any) => {
+    setSelectedUser(user);
+    setPromoteModal(true);
+  };
+
+  const handleToggleAdmin = async () => {
+    if (!selectedUser) return;
+    
+    setIsPromoting(true);
+    try {
+      if ((selectedUser as any).is_admin) {
+        // Demote: Remove admin role
+        const { error } = await supabase
+          .from('user_roles')
+          .delete()
+          .eq('user_id', selectedUser.user_id)
+          .eq('role', 'admin');
+
+        if (error) throw error;
+        toast.success('Admin privileges removed');
+      } else {
+        // Promote: Add admin role
+        const { error } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: selectedUser.user_id,
+            role: 'admin'
+          });
+
+        if (error) throw error;
+        toast.success('User promoted to admin');
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['allUsers'] });
+      setPromoteModal(false);
+    } catch (error) {
+      console.error('Error updating admin status:', error);
+      toast.error('Failed to update admin status');
+    } finally {
+      setIsPromoting(false);
+    }
+  };
+
   const totalBalance = users?.reduce((sum, user) => sum + (user.balance || 0), 0) || 0;
   const totalTransactions = transactions?.length || 0;
   const totalVolume = transactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
@@ -341,6 +389,12 @@ const AdminPage = () => {
                             <p className="font-medium truncate">
                               {user.display_name || user.email?.split('@')[0] || 'Unnamed User'}
                             </p>
+                            {(user as any).is_admin && (
+                              <Badge className="text-xs bg-primary text-primary-foreground">
+                                <ShieldCheck className="h-3 w-3 mr-1" />
+                                Admin
+                              </Badge>
+                            )}
                             {(user as any).is_suspended && (
                               <Badge variant="destructive" className="text-xs">Suspended</Badge>
                             )}
@@ -439,7 +493,7 @@ const AdminPage = () => {
                           {(user as any).is_suspended ? 'Activate' : 'Suspend'}
                         </Button>
                       </div>
-                      <div className="mt-2">
+                      <div className="mt-2 grid grid-cols-2 gap-2">
                         <Button
                           size="sm"
                           variant="outline"
@@ -448,6 +502,24 @@ const AdminPage = () => {
                         >
                           <Lock className="h-3 w-3 mr-1" />
                           {(user as any).transfer_pin ? 'Change PIN' : 'Set Transfer PIN'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={(user as any).is_admin ? 'text-destructive border-destructive/30' : 'text-primary border-primary/30'}
+                          onClick={() => openPromoteModal(user)}
+                        >
+                          {(user as any).is_admin ? (
+                            <>
+                              <ShieldOff className="h-3 w-3 mr-1" />
+                              Demote
+                            </>
+                          ) : (
+                            <>
+                              <ShieldCheck className="h-3 w-3 mr-1" />
+                              Make Admin
+                            </>
+                          )}
                         </Button>
                       </div>
                     </CardContent>
@@ -713,6 +785,58 @@ const AdminPage = () => {
               variant={(selectedUser as any)?.is_transfer_restricted ? 'default' : 'destructive'}
             >
               {isRestricting ? 'Processing...' : ((selectedUser as any)?.is_transfer_restricted ? 'Remove Restriction' : 'Restrict Transfers')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Promote/Demote Admin Dialog */}
+      <Dialog open={promoteModal} onOpenChange={setPromoteModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {(selectedUser as any)?.is_admin ? (
+                <>
+                  <ShieldOff className="h-5 w-5 text-destructive" />
+                  Remove Admin Privileges
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="h-5 w-5 text-primary" />
+                  Promote to Admin
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {(selectedUser as any)?.is_admin 
+                ? 'This will remove admin privileges from this user.'
+                : 'This will grant admin privileges to this user, allowing them to manage all users and transactions.'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+              <Avatar className="h-10 w-10">
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {selectedUser?.display_name?.charAt(0)?.toUpperCase() || selectedUser?.email?.charAt(0)?.toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-medium">{selectedUser?.display_name || selectedUser?.email || 'Unnamed User'}</p>
+                <p className="text-sm text-muted-foreground">{selectedUser?.email}</p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPromoteModal(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleToggleAdmin} 
+              disabled={isPromoting}
+              variant={(selectedUser as any)?.is_admin ? 'destructive' : 'default'}
+            >
+              {isPromoting ? 'Processing...' : ((selectedUser as any)?.is_admin ? 'Remove Admin' : 'Make Admin')}
             </Button>
           </DialogFooter>
         </DialogContent>
