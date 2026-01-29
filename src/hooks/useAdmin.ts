@@ -50,6 +50,19 @@ export function useAllUsers() {
         throw balancesError;
       }
 
+      // Fetch all admin roles
+      const { data: adminRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .eq('role', 'admin');
+
+      if (rolesError) {
+        console.error('Error fetching admin roles:', rolesError);
+        // Don't throw, just continue without admin info
+      }
+
+      const adminUserIds = new Set(adminRoles?.map(r => r.user_id) || []);
+
       // Combine profiles with balances and add admin fields
       return (profiles || []).map(profile => ({
         ...profile,
@@ -60,6 +73,7 @@ export function useAllUsers() {
         transfer_pin: (profile as any).transfer_pin ?? null,
         is_transfer_restricted: (profile as any).is_transfer_restricted ?? false,
         transfer_restriction_message: (profile as any).transfer_restriction_message ?? null,
+        is_admin: adminUserIds.has(profile.user_id),
       }));
     },
     enabled: adminCheckComplete && isAdmin === true,
