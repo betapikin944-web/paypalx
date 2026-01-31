@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Eye, EyeOff, Plus, Calculator, ArrowRightLeft } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 interface BalanceCardProps {
   balance: number;
@@ -9,6 +10,7 @@ interface BalanceCardProps {
 
 export function BalanceCard({ balance }: BalanceCardProps) {
   const [showBalance, setShowBalance] = useState(true);
+  const { toast } = useToast();
 
   const formatBalance = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -68,20 +70,38 @@ export function BalanceCard({ balance }: BalanceCardProps) {
           </p>
 
           {/* Transfer Money Button */}
-          <motion.button
-            whileTap={{ scale: 0.98 }}
-            className="inline-flex items-center justify-center gap-2 py-2.5 px-8 border-2 border-primary text-primary rounded-full font-medium text-sm hover:bg-primary/5 transition-colors mb-6"
-          >
-            Transfer Money
-          </motion.button>
+          <Link to="/send" className="inline-flex">
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              className="inline-flex items-center justify-center gap-2 py-2.5 px-8 border-2 border-primary text-primary rounded-full font-medium text-sm hover:bg-primary/5 transition-colors mb-6"
+            >
+              Transfer Money
+            </motion.button>
+          </Link>
 
           {/* Quick Links */}
           <div className="flex items-center justify-center gap-8 pt-4 border-t border-border">
-            <button className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors text-sm font-medium">
+            <button
+              onClick={() =>
+                toast({
+                  title: "Coming soon",
+                  description: "Multi-currency balances aren’t enabled yet.",
+                })
+              }
+              className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors text-sm font-medium"
+            >
               <Plus className="h-4 w-4" />
               Add a currency
             </button>
-            <button className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors text-sm font-medium">
+            <button
+              onClick={() =>
+                toast({
+                  title: "Coming soon",
+                  description: "Tell me which currencies you want and I’ll wire up a calculator.",
+                })
+              }
+              className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors text-sm font-medium"
+            >
               <Calculator className="h-4 w-4" />
               Currency Calculator
             </button>

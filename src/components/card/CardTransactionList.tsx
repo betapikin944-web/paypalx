@@ -56,6 +56,8 @@ export function CardTransactionList({ cardId }: CardTransactionListProps) {
     <div className="space-y-3">
       {transactions.map((transaction, index) => {
         const Icon = categoryIcons[transaction.merchant_category || 'default'] || categoryIcons.default;
+        const isInflow = ["load", "deposit"].includes(transaction.transaction_type);
+        const sign = isInflow ? "+" : "-";
         
         return (
           <motion.div
@@ -79,7 +81,7 @@ export function CardTransactionList({ cardId }: CardTransactionListProps) {
               </div>
               <div className="text-right">
                 <p className="font-semibold text-foreground">
-                  -${transaction.amount.toFixed(2)}
+                  {sign}${transaction.amount.toFixed(2)}
                 </p>
                 <p className="text-xs text-muted-foreground capitalize">
                   {transaction.status}
