@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { PhysicalCardRequestsAdmin } from '@/components/admin/PhysicalCardRequestsAdmin';
 
 const AdminPage = () => {
   const navigate = useNavigate();
@@ -348,9 +349,10 @@ const AdminPage = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            <TabsTrigger value="card-requests">Card Requests</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
@@ -581,6 +583,10 @@ const AdminPage = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="card-requests" className="space-y-4">
+            <PhysicalCardRequestsAdmin />
           </TabsContent>
         </Tabs>
       </div>

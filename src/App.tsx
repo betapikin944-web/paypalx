@@ -17,6 +17,12 @@ import ActivityPage from "./pages/ActivityPage";
 import ProfilePage from "./pages/ProfilePage";
 import SettingsPage from "./pages/SettingsPage";
 import AdminPage from "./pages/AdminPage";
+import HelpCenterPage from "./pages/HelpCenterPage";
+import LegalPage from "./pages/LegalPage";
+import ProfileQrPage from "./pages/ProfileQrPage";
+import LinkedDevicesPage from "./pages/LinkedDevicesPage";
+import NotificationsSettingsPage from "./pages/NotificationsSettingsPage";
+import SecurityPrivacyPage from "./pages/SecurityPrivacyPage";
 import WelcomePage from "./pages/WelcomePage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
@@ -50,6 +56,12 @@ const App = () => (
               <Route path="/activity" element={<ProtectedRoute><ActivityPage /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+              <Route path="/settings/notifications" element={<ProtectedRoute><NotificationsSettingsPage /></ProtectedRoute>} />
+              <Route path="/settings/security" element={<ProtectedRoute><SecurityPrivacyPage /></ProtectedRoute>} />
+              <Route path="/profile/qr" element={<ProtectedRoute><ProfileQrPage /></ProtectedRoute>} />
+              <Route path="/profile/devices" element={<ProtectedRoute><LinkedDevicesPage /></ProtectedRoute>} />
+              <Route path="/help" element={<ProtectedRoute><HelpCenterPage /></ProtectedRoute>} />
+              <Route path="/legal" element={<ProtectedRoute><LegalPage /></ProtectedRoute>} />
               <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
