@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useCard } from "@/hooks/useCard";
 import { useBalance } from "@/hooks/useBalance";
+import { useCardBalance } from "@/hooks/useCardBalance";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -35,15 +36,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
 
 export default function CardPage() {
   const { card, isLoading, createCard, isCreating, toggleLock, toggleFreeze } = useCard();
-  const { data: balance } = useBalance();
+  const { data: mainBalance } = useBalance();
+  const { data: cardBalance } = useCardBalance(card?.id);
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
@@ -55,6 +55,9 @@ export default function CardPage() {
   const [showCvv, setShowCvv] = useState(false);
   const [cashAmount, setCashAmount] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const mainAmount = mainBalance?.amount ? Number(mainBalance.amount) : 0;
+  const cardAmount = cardBalance?.amount ? Number(cardBalance.amount) : 0;
 
   const handleCreateCard = () => {
     if (!cardHolderName.trim()) {
@@ -71,7 +74,7 @@ export default function CardPage() {
   };
 
   const handleAddCash = async () => {
-    if (!user || !cashAmount) return;
+    if (!user || !card || !cashAmount) return;
     
     const amount = parseFloat(cashAmount);
     if (isNaN(amount) || amount <= 0) {
@@ -83,61 +86,40 @@ export default function CardPage() {
       return;
     }
 
+    if (amount > mainAmount) {
+      toast({
+        title: "Insufficient main balance",
+        description: "You can only add cash up to your main balance.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsProcessing(true);
     try {
-      // Get current balance
-      const { data: currentBalance, error: fetchError } = await supabase
-        .from('balances')
-        .select('amount')
-        .eq('user_id', user.id)
-        .single();
+      const { data, error } = await supabase.rpc("card_add_cash", {
+        _card_id: card.id,
+        _amount: amount,
+      });
+      if (error) throw error;
 
-      if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+      const result = Array.isArray(data) ? data[0] : data;
 
-      const currentAmount = currentBalance?.amount || 0;
-      const newAmount = currentAmount + amount;
+      queryClient.invalidateQueries({ queryKey: ["balance"] });
+      queryClient.invalidateQueries({ queryKey: ["cardBalance"] });
+      queryClient.invalidateQueries({ queryKey: ["cardTransactions"] });
 
-      // Update or insert balance
-      if (currentBalance) {
-        const { error } = await supabase
-          .from('balances')
-          .update({ amount: newAmount })
-          .eq('user_id', user.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('balances')
-          .insert({ user_id: user.id, amount: newAmount });
-        if (error) throw error;
-      }
-
-      // Log as card transaction
-      if (card) {
-        await supabase.from('card_transactions').insert({
-          user_id: user.id,
-          card_id: card.id,
-          amount: amount,
-          merchant_name: 'Cash Deposit',
-          merchant_category: 'deposit',
-          transaction_type: 'deposit',
-          status: 'completed'
-        });
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['balance'] });
-      queryClient.invalidateQueries({ queryKey: ['cardTransactions'] });
-      
       toast({
-        title: "Cash Added!",
-        description: `$${amount.toFixed(2)} has been added to your card.`,
+        title: "Cash added",
+        description: `$${amount.toFixed(2)} moved to your Cash Card.`,
       });
       setShowAddCashDialog(false);
-      setCashAmount('');
-    } catch (error) {
-      console.error('Error adding cash:', error);
+      setCashAmount("");
+    } catch (error: any) {
+      console.error("Error adding cash:", error);
       toast({
         title: "Failed to add cash",
-        description: "Please try again later.",
+        description: error?.message || "Please try again later.",
         variant: "destructive",
       });
     } finally {
@@ -146,7 +128,7 @@ export default function CardPage() {
   };
 
   const handleCashOut = async () => {
-    if (!user || !balance || !cashAmount) return;
+    if (!user || !card || !cashAmount) return;
     
     const amount = parseFloat(cashAmount);
     if (isNaN(amount) || amount <= 0) {
@@ -158,10 +140,10 @@ export default function CardPage() {
       return;
     }
 
-    if (amount > Number(balance.amount)) {
+    if (amount > cardAmount) {
       toast({
         title: "Insufficient balance",
-        description: "You don't have enough balance to cash out this amount.",
+        description: "You don't have enough card balance to cash out this amount.",
         variant: "destructive",
       });
       return;
@@ -169,42 +151,27 @@ export default function CardPage() {
 
     setIsProcessing(true);
     try {
-      const newAmount = Number(balance.amount) - amount;
-
-      const { error } = await supabase
-        .from('balances')
-        .update({ amount: newAmount })
-        .eq('user_id', user.id);
-
+      const { data, error } = await supabase.rpc("card_cash_out", {
+        _card_id: card.id,
+        _amount: amount,
+      });
       if (error) throw error;
 
-      // Log as card transaction
-      if (card) {
-        await supabase.from('card_transactions').insert({
-          user_id: user.id,
-          card_id: card.id,
-          amount: amount,
-          merchant_name: 'Cash Withdrawal',
-          merchant_category: 'withdrawal',
-          transaction_type: 'withdrawal',
-          status: 'completed'
-        });
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['balance'] });
-      queryClient.invalidateQueries({ queryKey: ['cardTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ["balance"] });
+      queryClient.invalidateQueries({ queryKey: ["cardBalance"] });
+      queryClient.invalidateQueries({ queryKey: ["cardTransactions"] });
       
       toast({
-        title: "Cash Out Successful!",
-        description: `$${amount.toFixed(2)} has been cashed out.`,
+        title: "Cash out successful",
+        description: `$${amount.toFixed(2)} moved back to your main balance.`,
       });
       setShowCashOutDialog(false);
       setCashAmount('');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error cashing out:', error);
       toast({
         title: "Failed to cash out",
-        description: "Please try again later.",
+        description: error?.message || "Please try again later.",
         variant: "destructive",
       });
     } finally {
@@ -359,7 +326,7 @@ export default function CardPage() {
         <div className="flex items-center justify-between mb-4">
           <span className="text-muted-foreground">Card Balance</span>
           <span className="text-2xl font-bold text-foreground">
-            ${balance?.amount?.toFixed(2) || '0.00'}
+            ${cardAmount.toFixed(2)}
           </span>
         </div>
         <div className="flex gap-3">
@@ -511,8 +478,12 @@ export default function CardPage() {
             <div className="p-4 rounded-xl bg-muted">
               <p className="text-xs text-muted-foreground mb-1">Current Balance</p>
               <p className="text-2xl font-bold text-foreground">
-                ${balance?.amount?.toFixed(2) || '0.00'}
+                ${mainAmount.toFixed(2)}
               </p>
+            </div>
+            <div className="p-4 rounded-xl bg-muted">
+              <p className="text-xs text-muted-foreground mb-1">Card Balance</p>
+              <p className="text-2xl font-bold text-foreground">${cardAmount.toFixed(2)}</p>
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Amount to Add</label>
@@ -525,6 +496,7 @@ export default function CardPage() {
                   placeholder="0.00"
                   className="h-14 pl-10 text-xl rounded-xl"
                   min="0"
+                  max={mainAmount}
                   step="0.01"
                 />
               </div>
@@ -554,7 +526,7 @@ export default function CardPage() {
             <div className="p-4 rounded-xl bg-muted">
               <p className="text-xs text-muted-foreground mb-1">Available Balance</p>
               <p className="text-2xl font-bold text-foreground">
-                ${balance?.amount?.toFixed(2) || '0.00'}
+                ${cardAmount.toFixed(2)}
               </p>
             </div>
             <div>
@@ -568,11 +540,11 @@ export default function CardPage() {
                   placeholder="0.00"
                   className="h-14 pl-10 text-xl rounded-xl"
                   min="0"
-                  max={balance?.amount || 0}
+                  max={cardAmount}
                   step="0.01"
                 />
               </div>
-              {parseFloat(cashAmount) > Number(balance?.amount || 0) && (
+              {parseFloat(cashAmount) > cardAmount && (
                 <p className="text-sm text-destructive mt-1">
                   Insufficient balance
                 </p>
@@ -585,7 +557,7 @@ export default function CardPage() {
             </Button>
             <Button 
               onClick={handleCashOut} 
-              disabled={isProcessing || !cashAmount || parseFloat(cashAmount) > Number(balance?.amount || 0)}
+              disabled={isProcessing || !cashAmount || parseFloat(cashAmount) > cardAmount}
             >
               {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Cash Out'}
             </Button>

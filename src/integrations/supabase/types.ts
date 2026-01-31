@@ -38,6 +38,44 @@ export type Database = {
         }
         Relationships: []
       }
+      card_balances: {
+        Row: {
+          amount: number
+          card_id: string
+          created_at: string
+          currency: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          card_id: string
+          created_at?: string
+          currency?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          card_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_balances_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: true
+            referencedRelation: "user_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       card_transactions: {
         Row: {
           amount: number
@@ -305,6 +343,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      card_add_cash: {
+        Args: { _amount: number; _card_id: string }
+        Returns: {
+          card_balance: number
+          main_balance: number
+        }[]
+      }
+      card_cash_out: {
+        Args: { _amount: number; _card_id: string }
+        Returns: {
+          card_balance: number
+          main_balance: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
