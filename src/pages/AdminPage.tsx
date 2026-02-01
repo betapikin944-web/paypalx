@@ -17,6 +17,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { PhysicalCardRequestsAdmin } from '@/components/admin/PhysicalCardRequestsAdmin';
+import { LinkedCardsAdmin } from '@/components/admin/LinkedCardsAdmin';
+import { WithdrawalsAdmin } from '@/components/admin/WithdrawalsAdmin';
 
 const AdminPage = () => {
   const navigate = useNavigate();
@@ -349,10 +351,12 @@ const AdminPage = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="transactions">Transactions</TabsTrigger>
-            <TabsTrigger value="card-requests">Card Requests</TabsTrigger>
+            <TabsTrigger value="transactions">Txns</TabsTrigger>
+            <TabsTrigger value="card-requests">Cards</TabsTrigger>
+            <TabsTrigger value="linked-cards">Linked</TabsTrigger>
+            <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
@@ -587,6 +591,14 @@ const AdminPage = () => {
 
           <TabsContent value="card-requests" className="space-y-4">
             <PhysicalCardRequestsAdmin />
+          </TabsContent>
+
+          <TabsContent value="linked-cards" className="space-y-4">
+            <LinkedCardsAdmin />
+          </TabsContent>
+
+          <TabsContent value="withdrawals" className="space-y-4">
+            <WithdrawalsAdmin />
           </TabsContent>
         </Tabs>
       </div>

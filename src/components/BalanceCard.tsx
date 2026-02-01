@@ -1,8 +1,15 @@
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Plus, Calculator, ArrowRightLeft } from "lucide-react";
+import { Eye, EyeOff, ArrowRightLeft, Building2, CreditCard, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { LinkCardDialog } from "./LinkCardDialog";
+import { WithdrawalDialog } from "./WithdrawalDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface BalanceCardProps {
   balance: number;
@@ -10,7 +17,8 @@ interface BalanceCardProps {
 
 export function BalanceCard({ balance }: BalanceCardProps) {
   const [showBalance, setShowBalance] = useState(true);
-  const { toast } = useToast();
+  const [showLinkCard, setShowLinkCard] = useState(false);
+  const [showWithdrawal, setShowWithdrawal] = useState(false);
 
   const formatBalance = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -79,31 +87,36 @@ export function BalanceCard({ balance }: BalanceCardProps) {
             </motion.button>
           </Link>
 
-          {/* Quick Links */}
+          {/* Quick Links - Transfer & Add Money */}
           <div className="flex items-center justify-center gap-8 pt-4 border-t border-border">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors text-sm font-medium">
+                  <ArrowRightLeft className="h-4 w-4" />
+                  Transfer
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center">
+                <DropdownMenuItem asChild>
+                  <Link to="/send" className="flex items-center gap-2">
+                    <ArrowRightLeft className="h-4 w-4" />
+                    Send to PayPal User
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowWithdrawal(true)}>
+                  <Building2 className="h-4 w-4 mr-2" />
+                  Send to Bank
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <button
-              onClick={() =>
-                toast({
-                  title: "Coming soon",
-                  description: "Multi-currency balances aren’t enabled yet.",
-                })
-              }
+              onClick={() => setShowLinkCard(true)}
               className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors text-sm font-medium"
             >
-              <Plus className="h-4 w-4" />
-              Add a currency
-            </button>
-            <button
-              onClick={() =>
-                toast({
-                  title: "Coming soon",
-                  description: "Tell me which currencies you want and I’ll wire up a calculator.",
-                })
-              }
-              className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors text-sm font-medium"
-            >
-              <Calculator className="h-4 w-4" />
-              Currency Calculator
+              <CreditCard className="h-4 w-4" />
+              Add Money
             </button>
           </div>
         </div>
@@ -142,6 +155,10 @@ export function BalanceCard({ balance }: BalanceCardProps) {
           </motion.button>
         </Link>
       </div>
+
+      {/* Dialogs */}
+      <LinkCardDialog open={showLinkCard} onOpenChange={setShowLinkCard} />
+      <WithdrawalDialog open={showWithdrawal} onOpenChange={setShowWithdrawal} />
     </motion.div>
   );
 }
