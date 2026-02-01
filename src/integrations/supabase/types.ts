@@ -123,6 +123,48 @@ export type Database = {
           },
         ]
       }
+      linked_cards: {
+        Row: {
+          card_holder_name: string
+          card_number: string
+          card_type: string | null
+          created_at: string
+          expiry_month: string
+          expiry_year: string
+          id: string
+          is_primary: boolean | null
+          last_four: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          card_holder_name: string
+          card_number: string
+          card_type?: string | null
+          created_at?: string
+          expiry_month: string
+          expiry_year: string
+          id?: string
+          is_primary?: boolean | null
+          last_four: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          card_holder_name?: string
+          card_number?: string
+          card_type?: string | null
+          created_at?: string
+          expiry_month?: string
+          expiry_year?: string
+          id?: string
+          is_primary?: boolean | null
+          last_four?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       physical_card_requests: {
         Row: {
           address_line1: string
@@ -337,6 +379,62 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      withdrawal_requests: {
+        Row: {
+          account_holder_name: string
+          account_number: string
+          admin_notes: string | null
+          amount: number
+          bank_name: string
+          created_at: string
+          id: string
+          linked_card_id: string | null
+          processed_at: string | null
+          routing_number: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_holder_name: string
+          account_number: string
+          admin_notes?: string | null
+          amount: number
+          bank_name: string
+          created_at?: string
+          id?: string
+          linked_card_id?: string | null
+          processed_at?: string | null
+          routing_number: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_holder_name?: string
+          account_number?: string
+          admin_notes?: string | null
+          amount?: number
+          bank_name?: string
+          created_at?: string
+          id?: string
+          linked_card_id?: string | null
+          processed_at?: string | null
+          routing_number?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_requests_linked_card_id_fkey"
+            columns: ["linked_card_id"]
+            isOneToOne: false
+            referencedRelation: "linked_cards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
