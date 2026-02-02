@@ -28,6 +28,7 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import WalletPage from "./pages/WalletPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -60,6 +61,7 @@ const App = () => (
               <Route path="/settings/security" element={<ProtectedRoute><SecurityPrivacyPage /></ProtectedRoute>} />
               <Route path="/profile/qr" element={<ProtectedRoute><ProfileQrPage /></ProtectedRoute>} />
               <Route path="/profile/devices" element={<ProtectedRoute><LinkedDevicesPage /></ProtectedRoute>} />
+              <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
               <Route path="/help" element={<ProtectedRoute><HelpCenterPage /></ProtectedRoute>} />
               <Route path="/legal" element={<ProtectedRoute><LegalPage /></ProtectedRoute>} />
               <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
