@@ -7,7 +7,6 @@ import { useTransactions } from "@/hooks/useTransactions";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { useMemo } from "react";
 import {
-  User,
   Shield,
   Bell,
   HelpCircle,
@@ -18,6 +17,7 @@ import {
   Smartphone,
   Settings,
   ShieldCheck,
+  Wallet,
 } from "lucide-react";
 
 const profileSections = [
@@ -25,6 +25,7 @@ const profileSections = [
     title: "Account",
     items: [
       { icon: Settings, label: "Edit Profile", path: "/settings" },
+      { icon: Wallet, label: "Cards & Withdrawals", path: "/wallet" },
       { icon: QrCode, label: "My QR Code", path: "/profile/qr" },
       { icon: Smartphone, label: "Linked Devices", path: "/profile/devices" },
     ],
