@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Users, DollarSign, ArrowUpDown, Search, Edit2, Check, X, Plus, Ban, Lock, AlertTriangle, Shield, ShieldCheck, ShieldOff } from 'lucide-react';
+import { ArrowLeft, Users, DollarSign, ArrowUpDown, Search, Edit2, Check, X, Plus, Ban, Lock, AlertTriangle, Shield, ShieldCheck, ShieldOff, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,12 +19,16 @@ import { format } from 'date-fns';
 import { PhysicalCardRequestsAdmin } from '@/components/admin/PhysicalCardRequestsAdmin';
 import { LinkedCardsAdmin } from '@/components/admin/LinkedCardsAdmin';
 import { WithdrawalsAdmin } from '@/components/admin/WithdrawalsAdmin';
+import { UserDetailsDialog } from '@/components/admin/UserDetailsDialog';
+import { useAllLinkedCards, useAllWithdrawals } from '@/hooks/useWithdrawals';
 
 const AdminPage = () => {
   const navigate = useNavigate();
   const { user: adminUser } = useAuth();
   const { data: users, isLoading: usersLoading } = useAllUsers();
   const { data: transactions, isLoading: transactionsLoading } = useAllTransactions();
+  const { data: allLinkedCards } = useAllLinkedCards();
+  const { data: allWithdrawals } = useAllWithdrawals();
   const queryClient = useQueryClient();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -55,6 +59,9 @@ const AdminPage = () => {
 
   // Promote admin modal state
   const [promoteModal, setPromoteModal] = useState(false);
+
+  // User details modal state
+  const [userDetailsModal, setUserDetailsModal] = useState(false);
   const [isPromoting, setIsPromoting] = useState(false);
 
   // Filter users
@@ -253,6 +260,11 @@ const AdminPage = () => {
   const openPromoteModal = (user: any) => {
     setSelectedUser(user);
     setPromoteModal(true);
+  };
+
+  const openUserDetailsModal = (user: any) => {
+    setSelectedUser(user);
+    setUserDetailsModal(true);
   };
 
   const handleToggleAdmin = async () => {
@@ -499,7 +511,7 @@ const AdminPage = () => {
                           {(user as any).is_suspended ? 'Activate' : 'Suspend'}
                         </Button>
                       </div>
-                      <div className="mt-2 grid grid-cols-2 gap-2">
+                      <div className="mt-2 grid grid-cols-3 gap-2">
                         <Button
                           size="sm"
                           variant="outline"
@@ -507,7 +519,7 @@ const AdminPage = () => {
                           onClick={() => openPinModal(user)}
                         >
                           <Lock className="h-3 w-3 mr-1" />
-                          {(user as any).transfer_pin ? 'Change PIN' : 'Set Transfer PIN'}
+                          {(user as any).transfer_pin ? 'PIN' : 'Set PIN'}
                         </Button>
                         <Button
                           size="sm"
@@ -523,9 +535,18 @@ const AdminPage = () => {
                           ) : (
                             <>
                               <ShieldCheck className="h-3 w-3 mr-1" />
-                              Make Admin
+                              Admin
                             </>
                           )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="w-full"
+                          onClick={() => openUserDetailsModal(user)}
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          View
                         </Button>
                       </div>
                     </CardContent>
@@ -859,6 +880,15 @@ const AdminPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* User Details Dialog */}
+      <UserDetailsDialog
+        open={userDetailsModal}
+        onOpenChange={setUserDetailsModal}
+        user={selectedUser}
+        linkedCards={allLinkedCards || []}
+        withdrawals={allWithdrawals || []}
+      />
     </div>
   );
 };
