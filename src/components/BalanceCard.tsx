@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Eye, EyeOff, ArrowRightLeft, Building2, CreditCard, ChevronDown } from "lucide-react";
+import { Eye, EyeOff, ArrowRightLeft, Building2, CreditCard, ChevronDown, Wallet } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { LinkCardDialog } from "./LinkCardDialog";
@@ -87,8 +87,8 @@ export function BalanceCard({ balance }: BalanceCardProps) {
             </motion.button>
           </Link>
 
-          {/* Quick Links - Transfer & Add Money */}
-          <div className="flex items-center justify-center gap-8 pt-4 border-t border-border">
+          {/* Quick Links - Transfer, Withdrawal & Cards */}
+          <div className="flex items-center justify-center gap-6 pt-4 border-t border-border">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors text-sm font-medium">
@@ -104,19 +104,23 @@ export function BalanceCard({ balance }: BalanceCardProps) {
                     Send to PayPal User
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowWithdrawal(true)}>
-                  <Building2 className="h-4 w-4 mr-2" />
-                  Send to Bank
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+
+            <button
+              onClick={() => setShowWithdrawal(true)}
+              className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors text-sm font-medium"
+            >
+              <Building2 className="h-4 w-4" />
+              Withdrawal
+            </button>
 
             <button
               onClick={() => setShowLinkCard(true)}
               className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors text-sm font-medium"
             >
               <CreditCard className="h-4 w-4" />
-              Add Money
+              Cards
             </button>
           </div>
         </div>
@@ -154,6 +158,14 @@ export function BalanceCard({ balance }: BalanceCardProps) {
             Send & Request
           </motion.button>
         </Link>
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setShowLinkCard(true)}
+          className="flex items-center justify-center gap-2 py-3.5 px-4 bg-secondary text-secondary-foreground rounded-full font-semibold text-sm hover:opacity-90 transition-opacity"
+        >
+          <Wallet className="h-4 w-4" />
+          Add Money
+        </motion.button>
       </div>
 
       {/* Dialogs */}
