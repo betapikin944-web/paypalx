@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Camera, User, Phone, Mail, Loader2 } from 'lucide-react';
+import { ArrowLeft, Camera, User, Phone, Mail, Loader2, Globe, Search, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/contexts/AuthContext';
+import { SUPPORTED_CURRENCIES, getCurrencySymbol } from '@/lib/currencies';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -14,15 +18,58 @@ export default function SettingsPage() {
   const { data: profile, isLoading } = useProfile();
   const updateProfile = useUpdateProfile();
 
+  const queryClient = useQueryClient();
+
   const [displayName, setDisplayName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [selectedCurrency, setSelectedCurrency] = useState('USD');
+  const [currencySearch, setCurrencySearch] = useState('');
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
+  const [savingCurrency, setSavingCurrency] = useState(false);
 
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.display_name || '');
       setPhoneNumber(profile.phone_number || '');
+      setSelectedCurrency(profile.preferred_currency || 'USD');
     }
   }, [profile]);
+
+  const filteredCurrencies = SUPPORTED_CURRENCIES.filter(c =>
+    c.code.toLowerCase().includes(currencySearch.toLowerCase()) ||
+    c.name.toLowerCase().includes(currencySearch.toLowerCase())
+  );
+
+  const currentCurrency = SUPPORTED_CURRENCIES.find(c => c.code === selectedCurrency);
+
+  const handleCurrencyChange = async (code: string) => {
+    setSelectedCurrency(code);
+    setShowCurrencyPicker(false);
+    setCurrencySearch('');
+    setSavingCurrency(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ preferred_currency: code })
+        .eq('user_id', user!.id);
+      if (error) throw error;
+
+      const { error: balError } = await supabase
+        .from('balances')
+        .update({ currency: code })
+        .eq('user_id', user!.id);
+      if (balError) throw balError;
+
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['balance'] });
+      toast.success(`Currency changed to ${code}`);
+    } catch (error: any) {
+      toast.error('Failed to update currency: ' + error.message);
+      setSelectedCurrency(profile?.preferred_currency || 'USD');
+    } finally {
+      setSavingCurrency(false);
+    }
+  };
 
   const handleSave = () => {
     updateProfile.mutate({
@@ -151,6 +198,63 @@ export default function SettingsPage() {
                 className="pl-10 h-12 bg-white border-border"
               />
             </div>
+          </div>
+
+          {/* Preferred Currency */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground">
+              Preferred Currency
+            </Label>
+            <button
+              type="button"
+              onClick={() => setShowCurrencyPicker(!showCurrencyPicker)}
+              className="w-full flex items-center gap-3 h-12 px-3 bg-white border border-border rounded-md hover:bg-muted/50 transition-colors"
+            >
+              <Globe className="w-5 h-5 text-muted-foreground" />
+              <span className="flex-1 text-left text-sm">
+                {currentCurrency ? `${currentCurrency.symbol} ${currentCurrency.code} — ${currentCurrency.name}` : selectedCurrency}
+              </span>
+              {savingCurrency ? (
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+              ) : (
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showCurrencyPicker ? 'rotate-180' : ''}`} />
+              )}
+            </button>
+
+            {showCurrencyPicker && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="border border-border rounded-lg overflow-hidden"
+              >
+                <div className="relative p-2 border-b border-border">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search currencies..."
+                    value={currencySearch}
+                    onChange={(e) => setCurrencySearch(e.target.value)}
+                    className="pl-8 h-9"
+                    autoFocus
+                  />
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {filteredCurrencies.map((c) => (
+                    <button
+                      key={c.code}
+                      onClick={() => handleCurrencyChange(c.code)}
+                      className={`w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-muted transition-colors ${
+                        selectedCurrency === c.code ? 'bg-primary/10 text-primary font-medium' : ''
+                      }`}
+                    >
+                      <span className="font-mono w-12 text-xs">{c.code}</span>
+                      <span className="text-muted-foreground w-8">{c.symbol}</span>
+                      <span className="flex-1 truncate">{c.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+            <p className="text-xs text-muted-foreground">Your balance and transactions will display in this currency</p>
           </div>
         </motion.div>
 
