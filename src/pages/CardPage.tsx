@@ -285,9 +285,28 @@ export default function CardPage() {
   return (
     <div className="min-h-screen pb-24 bg-background">
       {/* Header */}
-      <div className="p-4">
-        <h1 className="text-2xl font-bold text-foreground">Cash Card</h1>
-        <p className="text-muted-foreground text-sm">Manage your card</p>
+      <div className="p-4 pb-2">
+        <h1 className="text-2xl font-bold text-foreground">Finances</h1>
+      </div>
+
+      {/* PayPal Balance Display */}
+      <div className="mx-4 mb-4 p-4 rounded-2xl bg-card border border-border">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+            <svg width="20" height="20" viewBox="0 0 28 28" fill="none">
+              <path
+                d="M8 22V6h8c5 0 9 3 9 7.5S21 21 16 21h-4v1H8z"
+                fill="white"
+              />
+            </svg>
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-foreground">
+              ${mainAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+            <p className="text-sm text-muted-foreground">PayPal balance</p>
+          </div>
+        </div>
       </div>
 
       {/* Card Display with activity link */}
