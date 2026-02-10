@@ -1,10 +1,10 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Search, X, Loader2, Lock, AlertTriangle, Clock, Star, StarOff } from "lucide-react";
+import { ArrowLeft, Search, X, Loader2, Lock, AlertTriangle, Clock, Star, StarOff, RefreshCw } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { useSearchProfiles, Profile } from "@/hooks/useProfile";
+import { useSearchProfiles, Profile, useProfile } from "@/hooks/useProfile";
 import { useSendMoney } from "@/hooks/useTransactions";
 import { useBalance } from "@/hooks/useBalance";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +13,7 @@ import { Receipt } from "./Receipt";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { toast } from "sonner";
 import { useRecentBeneficiaries, useSavedBeneficiaries, useSaveBeneficiary, useRemoveBeneficiary } from "@/hooks/useBeneficiaries";
+import { getCurrencySymbol } from "@/lib/currencies";
 
 export function SendMoney() {
   const navigate = useNavigate();
@@ -34,11 +35,21 @@ export function SendMoney() {
 
   const { data: searchResults, isLoading: isSearching } = useSearchProfiles(searchTerm);
   const { data: balance } = useBalance();
+  const { data: profile } = useProfile();
   const { data: recentBeneficiaries, isLoading: beneficiariesLoading } = useRecentBeneficiaries();
   const { data: savedBeneficiaries } = useSavedBeneficiaries();
   const saveBeneficiary = useSaveBeneficiary();
   const removeBeneficiary = useRemoveBeneficiary();
   const sendMoney = useSendMoney();
+
+  const senderCurrency = (profile as any)?.preferred_currency || 'USD';
+  const cs = getCurrencySymbol(senderCurrency);
+
+  // Conversion preview state
+  const [recipientCurrency, setRecipientCurrency] = useState<string>('USD');
+  const [convertedAmount, setConvertedAmount] = useState<number | null>(null);
+  const [isConverting, setIsConverting] = useState(false);
+  const needsConversion = recipientCurrency !== senderCurrency;
 
   const isSaved = (userId: string) => savedBeneficiaries?.some(b => b.beneficiary_user_id === userId) ?? false;
 
@@ -92,10 +103,40 @@ export function SendMoney() {
     setAmount((prev) => prev.slice(0, -1));
   };
 
-  const handleContactSelect = (contact: Profile) => {
+  const handleContactSelect = async (contact: Profile) => {
     setSelectedContact(contact);
     setStep("amount");
+    // Fetch recipient's preferred currency
+    const { data: recipProfile } = await supabase
+      .from('profiles')
+      .select('preferred_currency')
+      .eq('user_id', contact.user_id)
+      .single();
+    setRecipientCurrency((recipProfile as any)?.preferred_currency || 'USD');
+    setConvertedAmount(null);
   };
+
+  // Fetch conversion when amount changes and currencies differ
+  useEffect(() => {
+    if (!needsConversion || !amount || parseFloat(amount) <= 0) {
+      setConvertedAmount(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsConverting(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('get-exchange-rate', {
+          body: { from: senderCurrency, to: recipientCurrency, amount: parseFloat(amount) },
+        });
+        if (!error && data) setConvertedAmount(data.convertedAmount);
+      } catch {
+        // silently fail
+      } finally {
+        setIsConverting(false);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [amount, needsConversion, senderCurrency, recipientCurrency]);
 
   const handlePay = async () => {
     if (!selectedContact || !amount) return;
@@ -450,11 +491,23 @@ export function SendMoney() {
                 animate={{ scale: 1 }}
                 className="text-6xl font-bold mb-2 text-foreground"
               >
-                ${amount || "0"}
+                {cs}{amount || "0"}
               </motion.div>
+              {needsConversion && amount && parseFloat(amount) > 0 && (
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  {isConverting ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : convertedAmount ? (
+                    <>
+                      <RefreshCw className="h-3 w-3" />
+                      <span>Recipient gets ≈ {getCurrencySymbol(recipientCurrency)}{convertedAmount.toFixed(2)} {recipientCurrency}</span>
+                    </>
+                  ) : null}
+                </div>
+              )}
               {balance && (
                 <p className="text-sm text-muted-foreground mt-2">
-                  Available balance: <span className="font-semibold">${Number(balance.amount).toFixed(2)}</span>
+                  Available: <span className="font-semibold">{cs}{Number(balance.amount).toFixed(2)}</span>
                 </p>
               )}
               {balance && parseFloat(amount) > Number(balance.amount) && (
@@ -495,7 +548,7 @@ export function SendMoney() {
                 onClick={handlePay}
                 className="w-full h-14 text-lg font-semibold rounded-full"
               >
-                {`Send $${amount || "0"}`}
+                {`Send ${cs}${amount || "0"}`}
               </Button>
             </div>
           </motion.div>
@@ -529,7 +582,7 @@ export function SendMoney() {
                 >
                   <div className="text-center mb-5">
                     <p className="text-sm text-muted-foreground mb-1">You are sending</p>
-                    <p className="text-4xl font-bold text-foreground">${parseFloat(amount).toFixed(2)}</p>
+                    <p className="text-4xl font-bold text-foreground">{cs}{parseFloat(amount).toFixed(2)}</p>
                   </div>
 
                   <div className="border-t border-border pt-4 space-y-3">
@@ -554,7 +607,7 @@ export function SendMoney() {
                   <div className="border-t border-border mt-4 pt-4">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Amount</span>
-                      <span className="font-semibold text-foreground">${parseFloat(amount).toFixed(2)}</span>
+                      <span className="font-semibold text-foreground">{cs}{parseFloat(amount).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm mt-1">
                       <span className="text-muted-foreground">Fee</span>
@@ -562,8 +615,18 @@ export function SendMoney() {
                     </div>
                     <div className="flex justify-between text-sm mt-2 pt-2 border-t border-border">
                       <span className="font-semibold text-foreground">Total</span>
-                      <span className="font-bold text-foreground">${parseFloat(amount).toFixed(2)}</span>
+                      <span className="font-bold text-foreground">{cs}{parseFloat(amount).toFixed(2)}</span>
                     </div>
+                    {needsConversion && convertedAmount && (
+                      <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t border-dashed border-border">
+                        <span className="text-muted-foreground flex items-center gap-1">
+                          <RefreshCw className="h-3 w-3" /> Recipient gets
+                        </span>
+                        <span className="font-semibold text-foreground">
+                          ≈ {getCurrencySymbol(recipientCurrency)}{convertedAmount.toFixed(2)} {recipientCurrency}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
 
@@ -582,7 +645,7 @@ export function SendMoney() {
                     disabled={sendMoney.isPending}
                     className="w-full h-14 text-lg font-semibold rounded-full"
                   >
-                    Confirm & Send ${parseFloat(amount).toFixed(2)}
+                    Confirm & Send {cs}{parseFloat(amount).toFixed(2)}
                   </Button>
                   <Button
                     variant="outline"
@@ -608,7 +671,7 @@ export function SendMoney() {
             </div>
             <h2 className="text-xl font-semibold mb-2">Enter Transfer PIN</h2>
             <p className="text-muted-foreground text-center mb-6">
-              Enter your PIN to confirm sending ${amount} to {selectedContact?.display_name || selectedContact?.email?.split('@')[0]}
+              Enter your PIN to confirm sending {cs}{amount} to {selectedContact?.display_name || selectedContact?.email?.split('@')[0]}
             </p>
             <Input
               type="password"

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Users, DollarSign, ArrowUpDown, Search, Edit2, Check, X, Plus, Ban, Lock, AlertTriangle, Shield, ShieldCheck, ShieldOff, Eye, Coins, Headphones } from 'lucide-react';
+import { ArrowLeft, Users, DollarSign, ArrowUpDown, Search, Edit2, Check, X, Plus, Ban, Lock, AlertTriangle, Shield, ShieldCheck, ShieldOff, Eye, Coins, Headphones, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,7 @@ import { UserDetailsDialog } from '@/components/admin/UserDetailsDialog';
 import { useAllLinkedCards, useAllWithdrawals } from '@/hooks/useWithdrawals';
 import { SupportContactsAdmin } from '@/components/admin/SupportContactsAdmin';
 import { CurrencyCreditAdmin } from '@/components/admin/CurrencyCreditAdmin';
+import { SetCurrencyAdmin } from '@/components/admin/SetCurrencyAdmin';
 import { getCurrencySymbol } from '@/lib/currencies';
 
 const AdminPage = () => {
@@ -69,6 +70,7 @@ const AdminPage = () => {
 
   // Currency credit modal state
   const [currencyCreditModal, setCurrencyCreditModal] = useState(false);
+  const [setCurrencyModal, setSetCurrencyModal] = useState(false);
 
   // Filter users
   const filteredUsers = users?.filter(user => {
@@ -527,7 +529,19 @@ const AdminPage = () => {
                           {(user as any).is_suspended ? 'Activate' : 'Suspend'}
                         </Button>
                       </div>
-                      <div className="mt-1 grid grid-cols-3 gap-1">
+                      <div className="mt-1 grid grid-cols-4 gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-[10px] h-7 px-1.5"
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setSetCurrencyModal(true);
+                          }}
+                        >
+                          <Globe className="h-2.5 w-2.5 mr-0.5" />
+                          {(user as any).preferred_currency || 'USD'}
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
@@ -933,6 +947,13 @@ const AdminPage = () => {
       <CurrencyCreditAdmin
         open={currencyCreditModal}
         onOpenChange={setCurrencyCreditModal}
+        selectedUser={selectedUser}
+      />
+
+      {/* Set Currency Dialog */}
+      <SetCurrencyAdmin
+        open={setCurrencyModal}
+        onOpenChange={setSetCurrencyModal}
         selectedUser={selectedUser}
       />
     </div>

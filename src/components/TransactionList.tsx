@@ -3,16 +3,22 @@ import { ArrowUpRight, ArrowDownLeft, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
 import { format, isToday, isYesterday } from "date-fns";
+import { getCurrencySymbol } from "@/lib/currencies";
 
 export function TransactionList() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: transactions, isLoading } = useTransactions();
+  const { data: profile } = useProfile();
+
+  const userCurrency = (profile as any)?.preferred_currency || 'USD';
+  const currSymbol = getCurrencySymbol(userCurrency);
 
   const formatAmount = (amount: number, isSent: boolean) => {
     const prefix = isSent ? "-" : "+";
-    return `${prefix}$${Math.abs(amount).toFixed(2)}`;
+    return `${prefix}${currSymbol}${Math.abs(amount).toFixed(2)}`;
   };
 
   const formatDate = (dateStr: string) => {

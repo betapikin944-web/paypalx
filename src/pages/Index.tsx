@@ -25,6 +25,7 @@ const Index = () => {
   const displayName = profile?.display_name || user?.email?.split('@')[0] || 'User';
   const email = user?.email || '';
   const balanceAmount = balance?.amount ? Number(balance.amount) : 0;
+  const currency = (profile as any)?.preferred_currency || balance?.currency || 'USD';
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -35,7 +36,7 @@ const Index = () => {
         animate={{ opacity: 1 }}
         className="pt-6"
       >
-        <BalanceCard balance={balanceAmount} />
+        <BalanceCard balance={balanceAmount} currency={currency} />
       </motion.div>
 
       <QuickActions />
