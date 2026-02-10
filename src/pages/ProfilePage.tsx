@@ -1,11 +1,14 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useRef, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
-import { useProfile } from "@/hooks/useProfile";
+import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   Shield,
   Bell,
@@ -18,6 +21,8 @@ import {
   Settings,
   ShieldCheck,
   Wallet,
+  Camera,
+  Loader2,
 } from "lucide-react";
 
 const profileSections = [
@@ -49,9 +54,12 @@ const profileSections = [
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
   const { data: profile } = useProfile();
+  const updateProfile = useUpdateProfile();
   const { data: transactions } = useTransactions();
   const { data: isAdmin } = useIsAdmin();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   const stats = useMemo(() => {
     if (!transactions || !user) {
@@ -71,6 +79,44 @@ export default function ProfilePage() {
     );
   }, [transactions, user]);
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/avatar.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      await updateProfile.mutateAsync({ avatar_url: publicUrl });
+      toast.success('Profile photo updated!');
+    } catch (error: any) {
+      toast.error('Failed to upload: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleLogout = async () => {
     await signOut();
     navigate('/welcome');
@@ -78,12 +124,21 @@ export default function ProfilePage() {
 
   const displayName = profile?.display_name || user?.email?.split('@')[0] || 'User';
   const userEmail = user?.email || 'user@example.com';
-  const userInitials = profile?.display_name 
+  const userInitials = profile?.display_name
     ? profile.display_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : userEmail.slice(0, 2).toUpperCase();
 
   return (
     <div className="min-h-screen pb-24 bg-background">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleAvatarUpload}
+        className="hidden"
+      />
+
       {/* Profile Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -92,20 +147,29 @@ export default function ProfilePage() {
       >
         <motion.div
           whileHover={{ scale: 1.05 }}
-        className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary-light mx-auto mb-3 flex items-center justify-center shadow-lg"
-      >
-        {profile?.avatar_url ? (
-          <img 
-            src={profile.avatar_url} 
-            alt="Avatar" 
-            className="w-full h-full rounded-full object-cover"
-          />
-        ) : (
-          <span className="text-xl font-bold text-white">{userInitials}</span>
-        )}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => fileInputRef.current?.click()}
+          className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent mx-auto mb-3 flex items-center justify-center shadow-lg relative cursor-pointer group"
+        >
+          {uploading ? (
+            <Loader2 className="h-6 w-6 text-white animate-spin" />
+          ) : profile?.avatar_url ? (
+            <img
+              src={profile.avatar_url}
+              alt="Avatar"
+              className="w-full h-full rounded-full object-cover"
+            />
+          ) : (
+            <span className="text-xl font-bold text-white">{userInitials}</span>
+          )}
+          {/* Camera overlay */}
+          <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <Camera className="h-5 w-5 text-white" />
+          </div>
         </motion.div>
         <h1 className="text-base font-bold text-foreground">{displayName}</h1>
         <p className="text-xs text-muted-foreground">{userEmail}</p>
+        <p className="text-[10px] text-muted-foreground mt-1">Tap photo to change</p>
       </motion.div>
 
       {/* Stats */}
