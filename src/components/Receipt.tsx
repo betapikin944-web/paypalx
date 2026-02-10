@@ -1,9 +1,10 @@
 import { useRef } from "react";
 import { motion } from "framer-motion";
-import { X, User, Copy, Mail, CheckCircle2, Clock, Loader2, ArrowUpRight, ArrowDownLeft, Shield, Hash, Download, Share2, FileText } from "lucide-react";
+import { X, User, Copy, Mail, CheckCircle2, Clock, Loader2, ArrowUpRight, ArrowDownLeft, Shield, Hash, Download, Share2, FileText, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import jsPDF from "jspdf";
 
 interface ReceiptProps {
   transaction: {
@@ -33,7 +34,6 @@ const PayPalLogo = ({ className = "h-7", white = false }: { className?: string; 
   </svg>
 );
 
-// Each timeline step gets its own color scheme
 const stepColors = {
   submitted: { bg: "#003087", icon: "#fff" },
   processing: { bg: "#0070BA", icon: "#fff" },
@@ -113,40 +113,171 @@ export function Receipt({ transaction, type, onClose }: ReceiptProps) {
     }
   };
 
-  const handleDownload = () => {
-    const text = [
-      "PayPal Transaction Receipt",
-      "═".repeat(35),
-      "",
-      `Type: ${type === "sent" ? "Money Sent" : "Money Received"}`,
-      `Amount: $${transaction.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-      `Date: ${formattedDate}`,
-      `Status: ${statusLabel}`,
-      "",
-      `${type === "sent" ? "Sent to" : "Received from"}: ${otherPartyName}`,
-      otherPartyEmail ? `Email: ${otherPartyEmail}` : "",
-      transaction.description ? `Note: ${transaction.description}` : "",
-      "",
-      `Transaction ID: ${transaction.id}`,
-      "",
-      "═".repeat(35),
-      "PayPal Pte. Ltd. · Secure Transaction",
-    ].filter(Boolean).join("\n");
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
 
-    const blob = new Blob([text], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `paypal-receipt-${transaction.id.slice(0, 8)}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Receipt downloaded");
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // Header background
+    doc.setFillColor(20, 44, 142);
+    doc.rect(0, 0, pageWidth, 55, 'F');
+
+    // PayPal text in header
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PayPal', pageWidth / 2, 18, { align: 'center' });
+
+    // Amount
+    doc.setFontSize(28);
+    doc.text(`$${transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, pageWidth / 2, 33, { align: 'center' });
+
+    // Type label
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(200, 210, 255);
+    doc.text(type === "sent" ? "Money Sent" : "Money Received", pageWidth / 2, 42, { align: 'center' });
+
+    // Date
+    doc.setFontSize(8);
+    doc.text(formattedDate, pageWidth / 2, 50, { align: 'center' });
+
+    // Body
+    let y = 68;
+    const leftMargin = 20;
+    const rightMargin = pageWidth - 20;
+
+    // Status badge
+    doc.setFillColor(isCompleted ? 0 : 0, isCompleted ? 166 : 112, isCompleted ? 81 : 186);
+    doc.roundedRect(pageWidth / 2 - 20, y - 5, 40, 8, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text(statusLabel, pageWidth / 2, y, { align: 'center' });
+
+    y += 16;
+
+    // Recipient / Sender section
+    doc.setTextColor(139, 144, 153);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(type === "sent" ? "SENT TO" : "RECEIVED FROM", leftMargin, y);
+    y += 7;
+
+    doc.setTextColor(44, 46, 47);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text(otherPartyName, leftMargin, y);
+    y += 6;
+
+    if (otherPartyEmail) {
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(139, 144, 153);
+      doc.text(otherPartyEmail, leftMargin, y);
+      y += 6;
+    }
+
+    // Divider
+    y += 6;
+    doc.setDrawColor(234, 237, 240);
+    doc.line(leftMargin, y, rightMargin, y);
+    y += 10;
+
+    // Transaction Details
+    doc.setTextColor(139, 144, 153);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text("TRANSACTION DETAILS", leftMargin, y);
+    y += 10;
+
+    const addDetailRow = (label: string, value: string) => {
+      doc.setTextColor(139, 144, 153);
+      doc.setFontSize(9);
+      doc.text(label, leftMargin, y);
+      doc.setTextColor(44, 46, 47);
+      doc.setFont('helvetica', 'bold');
+      doc.text(value, rightMargin, y, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      y += 8;
+    };
+
+    addDetailRow("Amount", `$${transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+    addDetailRow("Fee", "Free");
+    addDetailRow("Currency", transaction.currency);
+    addDetailRow("Status", statusLabel);
+    addDetailRow("Date", formattedDate);
+
+    if (transaction.description) {
+      addDetailRow("Note", transaction.description);
+    }
+
+    // Divider
+    y += 4;
+    doc.line(leftMargin, y, rightMargin, y);
+    y += 10;
+
+    // Transaction ID
+    doc.setTextColor(139, 144, 153);
+    doc.setFontSize(8);
+    doc.text("TRANSACTION ID", leftMargin, y);
+    y += 6;
+    doc.setTextColor(44, 46, 47);
+    doc.setFontSize(7);
+    doc.setFont('courier', 'normal');
+    doc.text(transaction.id, leftMargin, y);
+    y += 16;
+
+    // Protection notice
+    doc.setFillColor(245, 247, 250);
+    doc.roundedRect(leftMargin, y - 4, rightMargin - leftMargin, 14, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(37, 59, 128);
+    doc.text("Purchase Protection", leftMargin + 5, y + 2);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(139, 144, 153);
+    doc.text("Eligible purchases covered by PayPal Buyer Protection", leftMargin + 5, y + 8);
+
+    // Footer
+    y = doc.internal.pageSize.getHeight() - 20;
+    doc.setTextColor(176, 179, 184);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text("PayPal Pte. Ltd. · Secure Transaction", pageWidth / 2, y, { align: 'center' });
+
+    // Save
+    doc.save(`paypal-receipt-${transaction.id.slice(0, 8)}.pdf`);
+    toast.success("PDF receipt downloaded");
   };
 
-  const handleSaveClipboard = () => {
-    const text = `PayPal Receipt\n${type === "sent" ? "Sent" : "Received"} $${transaction.amount.toFixed(2)} ${type === "sent" ? "to" : "from"} ${otherPartyName}\nDate: ${formattedDate}\nTransaction ID: ${transaction.id}`;
-    navigator.clipboard.writeText(text);
-    toast.success("Receipt saved to clipboard");
+  const handleSaveImage = async () => {
+    // Use canvas to capture the receipt as an image for gallery save
+    try {
+      const text = `PayPal Receipt\n${type === "sent" ? "Sent" : "Received"} $${transaction.amount.toFixed(2)} ${type === "sent" ? "to" : "from"} ${otherPartyName}\nDate: ${formattedDate}\nTransaction ID: ${transaction.id}`;
+
+      // Try sharing as file first (for mobile gallery save)
+      if (navigator.share && navigator.canShare) {
+        const blob = new Blob([text], { type: 'text/plain' });
+        const file = new File([blob], `paypal-receipt-${transaction.id.slice(0, 8)}.txt`, { type: 'text/plain' });
+        const shareData = { files: [file] };
+        if (navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+          return;
+        }
+      }
+
+      // Fallback - copy to clipboard
+      await navigator.clipboard.writeText(text);
+      toast.success("Receipt saved to clipboard");
+    } catch {
+      toast.success("Receipt saved to clipboard");
+    }
   };
 
   return (
@@ -382,19 +513,19 @@ export function Receipt({ transaction, type, onClose }: ReceiptProps) {
           {/* Action Buttons */}
           <div className="grid grid-cols-3 gap-2 mb-4">
             <button
-              onClick={handleDownload}
+              onClick={handleDownloadPDF}
               className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-white hover:bg-[#f5f7fa] transition-colors"
               style={{ border: "1px solid #eaedf0" }}
             >
               <Download className="h-5 w-5 text-[#253B80]" />
-              <span className="text-[10px] font-medium text-[#2c2e2f]">Download</span>
+              <span className="text-[10px] font-medium text-[#2c2e2f]">PDF</span>
             </button>
             <button
-              onClick={handleSaveClipboard}
+              onClick={handleSaveImage}
               className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-white hover:bg-[#f5f7fa] transition-colors"
               style={{ border: "1px solid #eaedf0" }}
             >
-              <FileText className="h-5 w-5 text-[#253B80]" />
+              <Image className="h-5 w-5 text-[#253B80]" />
               <span className="text-[10px] font-medium text-[#2c2e2f]">Save</span>
             </button>
             <button

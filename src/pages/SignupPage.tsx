@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Eye, EyeOff, Check } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Check, Search, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
+import { supabase } from '@/integrations/supabase/client';
 
 const signupSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -32,6 +34,14 @@ const SignupPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({});
+  const [selectedCurrency, setSelectedCurrency] = useState('USD');
+  const [currencySearch, setCurrencySearch] = useState('');
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
+
+  const filteredCurrencies = SUPPORTED_CURRENCIES.filter(c =>
+    c.code.toLowerCase().includes(currencySearch.toLowerCase()) ||
+    c.name.toLowerCase().includes(currencySearch.toLowerCase())
+  );
 
   const passwordRequirements = [
     { label: 'At least 8 characters', met: password.length >= 8 },
@@ -76,6 +86,16 @@ const SignupPage = () => {
         });
       }
     } else {
+      // Update preferred currency after signup
+      if (selectedCurrency !== 'USD') {
+        // Small delay to ensure profile is created by trigger
+        setTimeout(async () => {
+          await supabase
+            .from('profiles')
+            .update({ preferred_currency: selectedCurrency })
+            .eq('email', email);
+        }, 1000);
+      }
       toast({
         title: "Account created!",
         description: "Welcome to PayPal. You're now logged in.",
@@ -188,6 +208,63 @@ const SignupPage = () => {
             </div>
             {errors.confirmPassword && (
               <p className="text-destructive text-sm mt-1">{errors.confirmPassword}</p>
+            )}
+          </div>
+
+          {/* Currency Selection */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Preferred Currency
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowCurrencyPicker(!showCurrencyPicker)}
+              className="w-full h-14 rounded-xl border border-input bg-background px-4 flex items-center justify-between text-left"
+            >
+              <span className="text-foreground">
+                {SUPPORTED_CURRENCIES.find(c => c.code === selectedCurrency)?.symbol} {selectedCurrency} — {SUPPORTED_CURRENCIES.find(c => c.code === selectedCurrency)?.name}
+              </span>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${showCurrencyPicker ? 'rotate-180' : ''}`} />
+            </button>
+            {showCurrencyPicker && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="mt-2 border border-input rounded-xl overflow-hidden bg-background"
+              >
+                <div className="p-2 border-b border-input">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search currencies..."
+                      value={currencySearch}
+                      onChange={(e) => setCurrencySearch(e.target.value)}
+                      className="pl-9 h-10 rounded-lg"
+                    />
+                  </div>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {filteredCurrencies.map((c) => (
+                    <button
+                      key={c.code}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCurrency(c.code);
+                        setShowCurrencyPicker(false);
+                        setCurrencySearch('');
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-muted transition-colors ${
+                        selectedCurrency === c.code ? 'bg-primary/10 text-primary' : ''
+                      }`}
+                    >
+                      <span className="font-mono text-xs w-10">{c.code}</span>
+                      <span className="w-6 text-center">{c.symbol}</span>
+                      <span className="flex-1 truncate">{c.name}</span>
+                      {selectedCurrency === c.code && <Check className="h-4 w-4 text-primary" />}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
             )}
           </div>
 
