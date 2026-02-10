@@ -219,8 +219,8 @@ export default function CardPage() {
     return (
       <div className="min-h-screen pb-24 bg-background">
         <div className="p-4">
-          <h1 className="text-2xl font-bold text-foreground">Cash Card</h1>
-          <p className="text-muted-foreground text-sm">Get your virtual card</p>
+          <h1 className="text-base font-bold text-foreground">Cash Card</h1>
+          <p className="text-muted-foreground text-[10px]">Get your virtual card</p>
         </div>
 
         <motion.div
@@ -231,8 +231,8 @@ export default function CardPage() {
           <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-primary/10 flex items-center justify-center">
             <CreditCard className="w-10 h-10 text-primary" />
           </div>
-          <h2 className="text-xl font-bold text-foreground mb-2">Create Your Cash Card</h2>
-          <p className="text-muted-foreground mb-6">
+          <h2 className="text-sm font-bold text-foreground mb-1">Create Your Cash Card</h2>
+          <p className="text-[11px] text-muted-foreground mb-4">
             Get a virtual debit card linked to your PayPal balance. Use it anywhere Visa is accepted.
           </p>
           <Button
@@ -286,14 +286,14 @@ export default function CardPage() {
     <div className="min-h-screen pb-24 bg-background">
       {/* Header */}
       <div className="p-4 pb-2">
-        <h1 className="text-2xl font-bold text-foreground">Finances</h1>
+        <h1 className="text-base font-semibold text-foreground">Finances</h1>
       </div>
 
       {/* PayPal Balance Display */}
-      <div className="mx-4 mb-4 p-4 rounded-2xl bg-card border border-border">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-            <svg width="20" height="20" viewBox="0 0 28 28" fill="none">
+      <div className="mx-4 mb-3 p-3 rounded-xl bg-card border border-border">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+            <svg width="16" height="16" viewBox="0 0 28 28" fill="none">
               <path
                 d="M8 22V6h8c5 0 9 3 9 7.5S21 21 16 21h-4v1H8z"
                 fill="white"
@@ -301,10 +301,10 @@ export default function CardPage() {
             </svg>
           </div>
           <div>
-            <p className="text-2xl font-bold text-foreground">
+            <p className="text-lg font-bold text-foreground">
               ${mainAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
-            <p className="text-sm text-muted-foreground">PayPal balance</p>
+            <p className="text-[10px] text-muted-foreground">PayPal balance</p>
           </div>
         </div>
       </div>
@@ -336,8 +336,8 @@ export default function CardPage() {
       </div>
 
       {/* See card activity row */}
-      <div className="mx-4 mb-6 flex items-center justify-between">
-        <span className="text-base font-medium text-foreground">See card activity</span>
+      <div className="mx-4 mb-4 flex items-center justify-between">
+        <span className="text-xs font-medium text-foreground">See card activity</span>
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={() => {
@@ -357,11 +357,11 @@ export default function CardPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="mx-4 p-6 rounded-2xl bg-card border border-border mb-6"
+        className="mx-4 p-4 rounded-xl bg-card border border-border mb-4"
       >
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-muted-foreground">Card Balance</span>
-          <span className="text-2xl font-bold text-foreground">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[11px] text-muted-foreground">Card Balance</span>
+          <span className="text-lg font-bold text-foreground">
             ${cardAmount.toFixed(2)}
           </span>
         </div>
@@ -369,17 +369,17 @@ export default function CardPage() {
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowAddCashDialog(true)}
-            className="flex-1 h-12 rounded-xl gradient-primary font-semibold text-primary-foreground flex items-center justify-center gap-2"
+            className="flex-1 h-9 rounded-lg gradient-primary font-medium text-xs text-primary-foreground flex items-center justify-center gap-1.5"
           >
-            <Plus className="h-5 w-5" />
+            <Plus className="h-3.5 w-3.5" />
             Add Cash
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowCashOutDialog(true)}
-            className="flex-1 h-12 rounded-xl bg-muted font-semibold flex items-center justify-center gap-2 text-foreground"
+            className="flex-1 h-9 rounded-lg bg-muted font-medium text-xs flex items-center justify-center gap-1.5 text-foreground"
           >
-            <ArrowUpDown className="h-5 w-5" />
+            <ArrowUpDown className="h-3.5 w-3.5" />
             Cash Out
           </motion.button>
         </div>
@@ -415,12 +415,12 @@ export default function CardPage() {
                   whileTap={{ scale: 0.95 }}
                   onClick={action.onClick}
                   disabled={action.disabled}
-                  className="p-4 rounded-xl bg-card border border-border flex items-center gap-3 hover:bg-muted transition-colors disabled:opacity-50"
+                  className="p-3 rounded-xl bg-card border border-border flex items-center gap-2.5 hover:bg-muted transition-colors disabled:opacity-50"
                 >
-                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                    <action.icon className="h-5 w-5 text-foreground" />
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                    <action.icon className="h-4 w-4 text-foreground" />
                   </div>
-                  <span className="font-medium text-foreground text-left">{action.label}</span>
+                  <span className="text-xs font-medium text-foreground text-left">{action.label}</span>
                 </motion.button>
               ))}
             </div>

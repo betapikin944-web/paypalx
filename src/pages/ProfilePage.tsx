@@ -92,20 +92,20 @@ export default function ProfilePage() {
       >
         <motion.div
           whileHover={{ scale: 1.05 }}
-          className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-primary-light mx-auto mb-4 flex items-center justify-center shadow-lg"
-        >
-          {profile?.avatar_url ? (
-            <img 
-              src={profile.avatar_url} 
-              alt="Avatar" 
-              className="w-full h-full rounded-full object-cover"
-            />
-          ) : (
-            <span className="text-3xl font-bold text-white">{userInitials}</span>
-          )}
+        className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary-light mx-auto mb-3 flex items-center justify-center shadow-lg"
+      >
+        {profile?.avatar_url ? (
+          <img 
+            src={profile.avatar_url} 
+            alt="Avatar" 
+            className="w-full h-full rounded-full object-cover"
+          />
+        ) : (
+          <span className="text-xl font-bold text-white">{userInitials}</span>
+        )}
         </motion.div>
-        <h1 className="text-2xl font-bold text-foreground">{displayName}</h1>
-        <p className="text-muted-foreground">{userEmail}</p>
+        <h1 className="text-base font-bold text-foreground">{displayName}</h1>
+        <p className="text-xs text-muted-foreground">{userEmail}</p>
       </motion.div>
 
       {/* Stats */}
@@ -115,13 +115,13 @@ export default function ProfilePage() {
         transition={{ delay: 0.1 }}
         className="grid grid-cols-2 gap-4 px-4 py-4"
       >
-        <div className="p-4 rounded-2xl bg-card border border-border text-center">
-          <p className="text-lg font-bold text-foreground">${stats.sent.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">Total Sent</p>
+        <div className="p-3 rounded-xl bg-card border border-border text-center">
+          <p className="text-sm font-bold text-foreground">${stats.sent.toFixed(2)}</p>
+          <p className="text-[10px] text-muted-foreground">Total Sent</p>
         </div>
-        <div className="p-4 rounded-2xl bg-card border border-border text-center">
-          <p className="text-lg font-bold text-foreground">${stats.received.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">Total Received</p>
+        <div className="p-3 rounded-xl bg-card border border-border text-center">
+          <p className="text-sm font-bold text-foreground">${stats.received.toFixed(2)}</p>
+          <p className="text-[10px] text-muted-foreground">Total Received</p>
         </div>
       </motion.div>
 
@@ -133,7 +133,7 @@ export default function ProfilePage() {
           transition={{ delay: 0.12 }}
           className="mb-6"
         >
-          <h2 className="px-4 text-sm font-medium text-muted-foreground mb-2 uppercase tracking-wider">
+          <h2 className="px-4 text-[10px] font-medium text-muted-foreground mb-1.5 uppercase tracking-wider">
             Administration
           </h2>
           <div className="mx-4 rounded-2xl bg-card border border-border overflow-hidden">
@@ -142,11 +142,11 @@ export default function ProfilePage() {
               onClick={() => navigate('/admin')}
               className="w-full flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors"
             >
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <ShieldCheck className="h-5 w-5 text-primary" />
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <ShieldCheck className="h-4 w-4 text-primary" />
               </div>
-              <span className="flex-1 text-left font-medium text-foreground">Admin Dashboard</span>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              <span className="flex-1 text-left text-xs font-medium text-foreground">Admin Dashboard</span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </motion.button>
           </div>
         </motion.div>
@@ -161,7 +161,7 @@ export default function ProfilePage() {
           transition={{ delay: 0.15 + sectionIndex * 0.05 }}
           className="mb-6"
         >
-          <h2 className="px-4 text-sm font-medium text-muted-foreground mb-2 uppercase tracking-wider">
+          <h2 className="px-4 text-[10px] font-medium text-muted-foreground mb-1.5 uppercase tracking-wider">
             {section.title}
           </h2>
           <div className="mx-4 rounded-2xl bg-card border border-border overflow-hidden">
@@ -174,11 +174,11 @@ export default function ProfilePage() {
                   index < section.items.length - 1 ? "border-b border-border" : ""
                 }`}
               >
-                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                  <item.icon className="h-5 w-5 text-foreground" />
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                  <item.icon className="h-4 w-4 text-foreground" />
                 </div>
-                <span className="flex-1 text-left font-medium text-foreground">{item.label}</span>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                <span className="flex-1 text-left text-xs font-medium text-foreground">{item.label}</span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </motion.button>
             ))}
           </div>
@@ -197,10 +197,10 @@ export default function ProfilePage() {
           onClick={handleLogout}
           className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border hover:bg-destructive/10 transition-colors group"
         >
-          <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
-            <LogOut className="h-5 w-5 text-destructive" />
+          <div className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center">
+            <LogOut className="h-4 w-4 text-destructive" />
           </div>
-          <span className="flex-1 text-left font-medium text-destructive">Log Out</span>
+          <span className="flex-1 text-left text-xs font-medium text-destructive">Log Out</span>
         </motion.button>
       </motion.div>
 
