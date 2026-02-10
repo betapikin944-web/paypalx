@@ -1,4 +1,4 @@
-import { Home, CreditCard, ArrowUpDown, Receipt, Trophy } from "lucide-react";
+import { Home, CreditCard, ArrowUpDown, Receipt, User } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -9,7 +9,7 @@ const leftItems = [
 
 const rightItems = [
   { icon: Receipt, label: "Activity", path: "/activity" },
-  { icon: Trophy, label: "Rewards", path: "/invest" },
+  { icon: User, label: "Profile", path: "/profile" },
 ];
 
 export function BottomNav() {

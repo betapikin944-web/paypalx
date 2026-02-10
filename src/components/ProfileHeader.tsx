@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Bell, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useProfile } from "@/hooks/useProfile";
 
 interface ProfileHeaderProps {
   name?: string;
@@ -8,6 +9,8 @@ interface ProfileHeaderProps {
 }
 
 export function ProfileHeader({ name = "User", email = "" }: ProfileHeaderProps) {
+  const { data: profile } = useProfile();
+
   const initials = name
     .split(" ")
     .map((n) => n[0])
@@ -28,11 +31,19 @@ export function ProfileHeader({ name = "User", email = "" }: ProfileHeaderProps)
           <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center border-2 border-white/30"
+            className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center border-2 border-white/30 overflow-hidden"
           >
-            <span className="text-xs font-bold text-white">
-              {initials}
-            </span>
+            {profile?.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt="Avatar"
+                className="w-full h-full rounded-full object-cover"
+              />
+            ) : (
+              <span className="text-xs font-bold text-white">
+                {initials}
+              </span>
+            )}
           </motion.div>
           <div>
             <p className="font-medium text-sm text-white">Hello, {displayName.split(" ")[0]}</p>
