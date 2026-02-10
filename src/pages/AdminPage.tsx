@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Users, DollarSign, ArrowUpDown, Search, Edit2, Check, X, Plus, Ban, Lock, AlertTriangle, Shield, ShieldCheck, ShieldOff, Eye } from 'lucide-react';
+import { ArrowLeft, Users, DollarSign, ArrowUpDown, Search, Edit2, Check, X, Plus, Ban, Lock, AlertTriangle, Shield, ShieldCheck, ShieldOff, Eye, Coins, Headphones } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,9 @@ import { LinkedCardsAdmin } from '@/components/admin/LinkedCardsAdmin';
 import { WithdrawalsAdmin } from '@/components/admin/WithdrawalsAdmin';
 import { UserDetailsDialog } from '@/components/admin/UserDetailsDialog';
 import { useAllLinkedCards, useAllWithdrawals } from '@/hooks/useWithdrawals';
+import { SupportContactsAdmin } from '@/components/admin/SupportContactsAdmin';
+import { CurrencyCreditAdmin } from '@/components/admin/CurrencyCreditAdmin';
+import { getCurrencySymbol } from '@/lib/currencies';
 
 const AdminPage = () => {
   const navigate = useNavigate();
@@ -63,6 +66,9 @@ const AdminPage = () => {
   // User details modal state
   const [userDetailsModal, setUserDetailsModal] = useState(false);
   const [isPromoting, setIsPromoting] = useState(false);
+
+  // Currency credit modal state
+  const [currencyCreditModal, setCurrencyCreditModal] = useState(false);
 
   // Filter users
   const filteredUsers = users?.filter(user => {
@@ -363,12 +369,18 @@ const AdminPage = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="users" className="text-[10px] px-1">Users</TabsTrigger>
-            <TabsTrigger value="transactions" className="text-[10px] px-1">Txns</TabsTrigger>
-            <TabsTrigger value="card-requests" className="text-[10px] px-1">Cards</TabsTrigger>
-            <TabsTrigger value="linked-cards" className="text-[10px] px-1">Linked</TabsTrigger>
-            <TabsTrigger value="withdrawals" className="text-[10px] px-1">Withdraw</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-7">
+            <TabsTrigger value="users" className="text-[10px] px-0.5">Users</TabsTrigger>
+            <TabsTrigger value="transactions" className="text-[10px] px-0.5">Txns</TabsTrigger>
+            <TabsTrigger value="card-requests" className="text-[10px] px-0.5">Cards</TabsTrigger>
+            <TabsTrigger value="linked-cards" className="text-[10px] px-0.5">Linked</TabsTrigger>
+            <TabsTrigger value="withdrawals" className="text-[10px] px-0.5">Withdraw</TabsTrigger>
+            <TabsTrigger value="currency" className="text-[10px] px-0.5">
+              <Coins className="h-3 w-3" />
+            </TabsTrigger>
+            <TabsTrigger value="support" className="text-[10px] px-0.5">
+              <Headphones className="h-3 w-3" />
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
@@ -479,10 +491,13 @@ const AdminPage = () => {
                           size="sm"
                           variant="outline"
                           className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-[10px] h-7 px-1.5"
-                          onClick={() => openAddFundsModal(user)}
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setCurrencyCreditModal(true);
+                          }}
                         >
-                          <Plus className="h-2.5 w-2.5 mr-0.5" />
-                          Add
+                          <Coins className="h-2.5 w-2.5 mr-0.5" />
+                          Credit
                         </Button>
                         <Button
                           size="sm"
@@ -619,6 +634,29 @@ const AdminPage = () => {
 
           <TabsContent value="withdrawals" className="space-y-4">
             <WithdrawalsAdmin />
+          </TabsContent>
+
+          <TabsContent value="currency" className="space-y-4">
+            <Card>
+              <CardHeader className="p-3 pb-2">
+                <CardTitle className="text-xs flex items-center gap-2">
+                  <Coins className="h-4 w-4" />
+                  Currency Management
+                </CardTitle>
+                <p className="text-[10px] text-muted-foreground">
+                  Credit any currency to a user. Auto-converts to their preferred currency.
+                </p>
+              </CardHeader>
+              <CardContent className="p-3 pt-0">
+                <p className="text-[10px] text-muted-foreground">
+                  Use the "Credit" button on each user card in the Users tab to credit a specific currency to their account.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="support" className="space-y-4">
+            <SupportContactsAdmin />
           </TabsContent>
         </Tabs>
       </div>
@@ -887,6 +925,13 @@ const AdminPage = () => {
         user={selectedUser}
         linkedCards={allLinkedCards || []}
         withdrawals={allWithdrawals || []}
+      />
+
+      {/* Currency Credit Dialog */}
+      <CurrencyCreditAdmin
+        open={currencyCreditModal}
+        onOpenChange={setCurrencyCreditModal}
+        selectedUser={selectedUser}
       />
     </div>
   );

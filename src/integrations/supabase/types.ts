@@ -243,6 +243,7 @@ export type Database = {
           is_suspended: boolean | null
           is_transfer_restricted: boolean | null
           phone_number: string | null
+          preferred_currency: string
           suspension_reason: string | null
           transfer_pin: string | null
           transfer_restriction_message: string | null
@@ -258,6 +259,7 @@ export type Database = {
           is_suspended?: boolean | null
           is_transfer_restricted?: boolean | null
           phone_number?: string | null
+          preferred_currency?: string
           suspension_reason?: string | null
           transfer_pin?: string | null
           transfer_restriction_message?: string | null
@@ -273,6 +275,7 @@ export type Database = {
           is_suspended?: boolean | null
           is_transfer_restricted?: boolean | null
           phone_number?: string | null
+          preferred_currency?: string
           suspension_reason?: string | null
           transfer_pin?: string | null
           transfer_restriction_message?: string | null
@@ -302,6 +305,36 @@ export type Database = {
           id?: string
           nickname?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      support_contacts: {
+        Row: {
+          contact_type: string
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          contact_type: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          contact_type?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          updated_at?: string
+          value?: string
         }
         Relationships: []
       }
