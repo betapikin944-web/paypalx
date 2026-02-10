@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { Wifi, Lock } from "lucide-react";
 
 interface CashCardProps {
   lastFour?: string;
@@ -12,48 +11,60 @@ export function CashCard({ lastFour = "4829", cardHolder = "JOHN DOE" }: CashCar
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       whileHover={{ scale: 1.02 }}
-      className="relative aspect-[1.586/1] w-full max-w-sm mx-auto rounded-2xl gradient-primary glow-primary overflow-hidden p-6 flex flex-col justify-between"
+      className="relative aspect-[1.586/1] w-full max-w-sm mx-auto rounded-2xl overflow-hidden shadow-lg"
+      style={{
+        background: "linear-gradient(135deg, hsl(218 100% 26%) 0%, hsl(220 80% 40%) 40%, hsl(205 100% 50%) 100%)",
+      }}
     >
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-20">
-        <svg className="w-full h-full" viewBox="0 0 400 250">
+      {/* Large P watermark */}
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+        <svg width="140" height="160" viewBox="0 0 140 160" fill="none" className="opacity-30">
+          <path
+            d="M30 140V20h40c25 0 45 15 45 38s-20 38-45 38H55v44H30z"
+            fill="url(#p-gradient)"
+          />
           <defs>
-            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="0.5" />
-            </pattern>
+            <linearGradient id="p-gradient" x1="30" y1="20" x2="115" y2="140" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="hsl(195 100% 60%)" />
+              <stop offset="100%" stopColor="hsl(40 100% 60%)" />
+            </linearGradient>
           </defs>
-          <rect width="100%" height="100%" fill="url(#grid)" />
         </svg>
       </div>
 
-      {/* Card Header */}
-      <div className="relative flex items-start justify-between">
-        <div>
-          <h3 className="text-xl font-bold text-primary-foreground tracking-wider">CASH</h3>
-          <p className="text-xs text-primary-foreground/70 font-medium">CARD</p>
-        </div>
-        <Wifi className="h-6 w-6 text-primary-foreground/80 rotate-90" />
-      </div>
-
-      {/* Card Number */}
-      <div className="relative">
-        <p className="text-lg font-mono text-primary-foreground/90 tracking-widest">
-          •••• •••• •••• {lastFour}
-        </p>
-      </div>
-
-      {/* Card Footer */}
-      <div className="relative flex items-end justify-between">
-        <div>
-          <p className="text-xs text-primary-foreground/60 mb-1">CARD HOLDER</p>
-          <p className="text-sm font-semibold text-primary-foreground tracking-wider">{cardHolder}</p>
-        </div>
+      {/* Card content */}
+      <div className="relative h-full flex flex-col justify-between p-5">
+        {/* Top row: PP logo + label */}
         <div className="flex items-center gap-2">
-          <Lock className="h-4 w-4 text-primary-foreground/60" />
-          <div className="flex -space-x-2">
-            <div className="w-8 h-8 rounded-full bg-primary-foreground/30" />
-            <div className="w-8 h-8 rounded-full bg-primary-foreground/20" />
+          {/* PayPal "PP" mark */}
+          <div className="flex items-center">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <path
+                d="M8 22V6h8c5 0 9 3 9 7.5S21 21 16 21h-4v1H8z"
+                fill="white"
+                fillOpacity="0.9"
+              />
+            </svg>
           </div>
+          <span className="text-primary-foreground font-semibold text-base tracking-wide">
+            Debit Card
+          </span>
+        </div>
+
+        {/* Mastercard logo */}
+        <div className="flex items-center gap-0 mt-auto mb-1">
+          <div className="flex -space-x-2">
+            <div className="w-7 h-7 rounded-full bg-red-500 opacity-90" />
+            <div className="w-7 h-7 rounded-full bg-yellow-400 opacity-80" />
+          </div>
+        </div>
+
+        {/* Card number (last four) */}
+        <div className="flex items-end justify-between">
+          <p className="text-primary-foreground font-semibold text-lg tracking-widest flex items-center gap-1">
+            <span className="text-primary-foreground/60 text-2xl leading-none">••</span>
+            <span>{lastFour}</span>
+          </p>
         </div>
       </div>
     </motion.div>
