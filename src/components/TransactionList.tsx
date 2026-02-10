@@ -42,16 +42,16 @@ export function TransactionList() {
       transition={{ delay: 0.3 }}
       className="px-4"
     >
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-foreground">Recent Activity</h2>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-xs font-semibold text-foreground uppercase tracking-wider">Recent Activity</h2>
         <button 
           onClick={() => navigate('/activity')}
-          className="text-sm text-primary font-semibold hover:underline"
+          className="text-[11px] text-primary font-medium hover:underline"
         >
           See All
         </button>
       </div>
-      <div className="bg-card rounded-2xl shadow-card border border-border overflow-hidden">
+      <div className="bg-card rounded-xl shadow-card border border-border overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -81,28 +81,28 @@ export function TransactionList() {
                   index !== recentTransactions.length - 1 ? "border-b border-border" : ""
                 }`}
               >
-                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
                   {isSent ? (
-                    <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
+                    <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <ArrowDownLeft className="h-5 w-5 text-emerald-600" />
+                    <ArrowDownLeft className="h-4 w-4 text-emerald-600" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground truncate">{otherPartyName}</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs font-medium text-foreground truncate">{otherPartyName}</p>
+                  <p className="text-[10px] text-muted-foreground">
                     {actionLabel}
                   </p>
                 </div>
                 <div className="text-right">
                   <p
-                    className={`font-semibold ${
+                    className={`text-xs font-semibold ${
                       isSent ? "text-foreground" : "text-emerald-600"
                     }`}
                   >
                     {formatAmount(transaction.amount, isSent)}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-[10px] text-muted-foreground">
                     {formatDate(transaction.created_at)}
                   </p>
                 </div>

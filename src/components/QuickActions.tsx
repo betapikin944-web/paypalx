@@ -15,7 +15,7 @@ export function QuickActions() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
-      className="grid grid-cols-4 gap-2 px-4 py-6"
+      className="grid grid-cols-4 gap-2 px-4 py-4"
     >
       {actions.map((action, index) => (
         <Link key={action.label} to={action.path}>
@@ -25,14 +25,14 @@ export function QuickActions() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 + index * 0.05 }}
-            className="flex flex-col items-center gap-2"
+            className="flex flex-col items-center gap-1.5"
           >
             <div
-              className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-md ${action.color}`}
+              className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-sm ${action.color}`}
             >
-              <action.icon className="h-6 w-6 text-white" />
+              <action.icon className="h-4.5 w-4.5 text-white" />
             </div>
-            <span className="text-xs font-medium text-foreground">{action.label}</span>
+            <span className="text-[10px] font-medium text-foreground">{action.label}</span>
           </motion.div>
         </Link>
       ))}

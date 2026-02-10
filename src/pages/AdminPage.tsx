@@ -318,45 +318,45 @@ const AdminPage = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-primary text-primary-foreground p-4">
-        <div className="flex items-center gap-3">
+      <div className="bg-primary text-primary-foreground p-3">
+        <div className="flex items-center gap-2">
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-primary-foreground hover:bg-primary/80"
+            className="text-primary-foreground hover:bg-primary/80 h-8 w-8"
             onClick={() => navigate('/')}
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            <h1 className="text-xl font-semibold">Admin Dashboard</h1>
+          <div className="flex items-center gap-1.5">
+            <Shield className="h-4 w-4" />
+            <h1 className="text-sm font-semibold">Admin Dashboard</h1>
           </div>
         </div>
       </div>
 
-      <div className="p-4 space-y-6 pb-24">
+      <div className="p-3 space-y-4 pb-24">
         {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2">
           <Card>
-            <CardContent className="p-4 text-center">
-              <Users className="h-6 w-6 mx-auto text-primary mb-2" />
-              <p className="text-2xl font-bold">{users?.length || 0}</p>
-              <p className="text-xs text-muted-foreground">Users</p>
+            <CardContent className="p-2.5 text-center">
+              <Users className="h-4 w-4 mx-auto text-primary mb-1" />
+              <p className="text-base font-bold">{users?.length || 0}</p>
+              <p className="text-[10px] text-muted-foreground">Users</p>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4 text-center">
-              <DollarSign className="h-6 w-6 mx-auto text-emerald-600 mb-2" />
-              <p className="text-2xl font-bold">${totalBalance.toFixed(0)}</p>
-              <p className="text-xs text-muted-foreground">Total Balance</p>
+            <CardContent className="p-2.5 text-center">
+              <DollarSign className="h-4 w-4 mx-auto text-emerald-600 mb-1" />
+              <p className="text-base font-bold">${totalBalance.toFixed(0)}</p>
+              <p className="text-[10px] text-muted-foreground">Total Balance</p>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4 text-center">
-              <ArrowUpDown className="h-6 w-6 mx-auto text-primary mb-2" />
-              <p className="text-2xl font-bold">{totalTransactions}</p>
-              <p className="text-xs text-muted-foreground">Transactions</p>
+            <CardContent className="p-2.5 text-center">
+              <ArrowUpDown className="h-4 w-4 mx-auto text-primary mb-1" />
+              <p className="text-base font-bold">{totalTransactions}</p>
+              <p className="text-[10px] text-muted-foreground">Transactions</p>
             </CardContent>
           </Card>
         </div>
@@ -364,11 +364,11 @@ const AdminPage = () => {
         {/* Tabs */}
         <Tabs defaultValue="users" className="w-full">
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="transactions">Txns</TabsTrigger>
-            <TabsTrigger value="card-requests">Cards</TabsTrigger>
-            <TabsTrigger value="linked-cards">Linked</TabsTrigger>
-            <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
+            <TabsTrigger value="users" className="text-[10px] px-1">Users</TabsTrigger>
+            <TabsTrigger value="transactions" className="text-[10px] px-1">Txns</TabsTrigger>
+            <TabsTrigger value="card-requests" className="text-[10px] px-1">Cards</TabsTrigger>
+            <TabsTrigger value="linked-cards" className="text-[10px] px-1">Linked</TabsTrigger>
+            <TabsTrigger value="withdrawals" className="text-[10px] px-1">Withdraw</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
@@ -393,80 +393,80 @@ const AdminPage = () => {
             ) : (
               <div className="space-y-3">
                 {filteredUsers.map((user) => (
-                  <Card key={user.id} className={(user as any).is_suspended ? 'border-destructive/50 bg-destructive/5' : ''}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <Avatar className="h-12 w-12">
+                   <Card key={user.id} className={(user as any).is_suspended ? 'border-destructive/50 bg-destructive/5' : ''}>
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-2">
+                        <Avatar className="h-8 w-8">
                           <AvatarImage src={user.avatar_url || undefined} />
-                          <AvatarFallback className="bg-primary/10 text-primary">
+                          <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
                             {user.display_name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="font-medium truncate">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="text-xs font-medium truncate">
                               {user.display_name || user.email?.split('@')[0] || 'Unnamed User'}
                             </p>
                             {(user as any).is_admin && (
-                              <Badge className="text-xs bg-primary text-primary-foreground">
-                                <ShieldCheck className="h-3 w-3 mr-1" />
+                              <Badge className="text-[9px] bg-primary text-primary-foreground h-4 px-1">
+                                <ShieldCheck className="h-2.5 w-2.5 mr-0.5" />
                                 Admin
                               </Badge>
                             )}
                             {(user as any).is_suspended && (
-                              <Badge variant="destructive" className="text-xs">Suspended</Badge>
+                              <Badge variant="destructive" className="text-[9px] h-4 px-1">Suspended</Badge>
                             )}
                             {(user as any).is_transfer_restricted && (
-                              <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800">Restricted</Badge>
+                              <Badge variant="secondary" className="text-[9px] bg-amber-100 text-amber-800 h-4 px-1">Restricted</Badge>
                             )}
                             {(user as any).transfer_pin && (
-                              <Badge variant="outline" className="text-xs">PIN Set</Badge>
+                              <Badge variant="outline" className="text-[9px] h-4 px-1">PIN</Badge>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground truncate">
+                          <p className="text-[10px] text-muted-foreground truncate">
                             {user.email || user.phone_number || user.user_id.slice(0, 8) + '...'}
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-[9px] text-muted-foreground">
                             Joined {format(new Date(user.created_at), 'MMM d, yyyy')}
                           </p>
                         </div>
                       </div>
 
                       {/* Balance Section */}
-                      <div className="mt-3 pt-3 border-t border-border">
+                      <div className="mt-2 pt-2 border-t border-border">
                         <div className="flex items-center justify-between">
                           <div>
                             {editingUserId === user.user_id ? (
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-muted-foreground">$</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] text-muted-foreground">$</span>
                                 <Input
                                   type="number"
                                   value={editBalance}
                                   onChange={(e) => setEditBalance(e.target.value)}
-                                  className="w-24 h-8 text-right"
+                                  className="w-20 h-7 text-xs text-right"
                                   autoFocus
                                 />
                                 <Button
                                   size="icon"
                                   variant="ghost"
-                                  className="h-8 w-8 text-emerald-600"
+                                  className="h-6 w-6 text-emerald-600"
                                   onClick={() => handleSaveBalance(user.user_id)}
                                 >
-                                  <Check className="h-4 w-4" />
+                                  <Check className="h-3 w-3" />
                                 </Button>
                                 <Button
                                   size="icon"
                                   variant="ghost"
-                                  className="h-8 w-8 text-destructive"
+                                  className="h-6 w-6 text-destructive"
                                   onClick={() => setEditingUserId(null)}
                                 >
-                                  <X className="h-4 w-4" />
+                                  <X className="h-3 w-3" />
                                 </Button>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-2">
-                                <p className="font-semibold text-lg">${user.balance?.toFixed(2)}</p>
-                                <Badge variant="secondary" className="text-xs">{user.currency}</Badge>
+                              <div className="flex items-center gap-1.5">
+                                <p className="font-semibold text-sm">${user.balance?.toFixed(2)}</p>
+                                <Badge variant="secondary" className="text-[9px] h-4 px-1">{user.currency}</Badge>
                               </div>
                             )}
                           </div>
@@ -474,67 +474,68 @@ const AdminPage = () => {
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="mt-3 grid grid-cols-4 gap-2">
+                      <div className="mt-2 grid grid-cols-4 gap-1">
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                          className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-[10px] h-7 px-1.5"
                           onClick={() => openAddFundsModal(user)}
                         >
-                          <Plus className="h-3 w-3 mr-1" />
+                          <Plus className="h-2.5 w-2.5 mr-0.5" />
                           Add
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
+                          className="text-[10px] h-7 px-1.5"
                           onClick={() => handleEditBalance(user.user_id, user.balance)}
                         >
-                          <Edit2 className="h-3 w-3 mr-1" />
+                          <Edit2 className="h-2.5 w-2.5 mr-0.5" />
                           Edit
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                          className="text-amber-600 border-amber-200 hover:bg-amber-50 text-[10px] h-7 px-1.5"
                           onClick={() => openRestrictModal(user)}
                         >
-                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
                           {(user as any).is_transfer_restricted ? 'Unrestr' : 'Restrict'}
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          className={(user as any).is_suspended ? 'text-emerald-600 border-emerald-200' : 'text-destructive border-destructive/30'}
+                          className={`text-[10px] h-7 px-1.5 ${(user as any).is_suspended ? 'text-emerald-600 border-emerald-200' : 'text-destructive border-destructive/30'}`}
                           onClick={() => openSuspendModal(user)}
                         >
-                          <Ban className="h-3 w-3 mr-1" />
+                          <Ban className="h-2.5 w-2.5 mr-0.5" />
                           {(user as any).is_suspended ? 'Activate' : 'Suspend'}
                         </Button>
                       </div>
-                      <div className="mt-2 grid grid-cols-3 gap-2">
+                      <div className="mt-1 grid grid-cols-3 gap-1">
                         <Button
                           size="sm"
                           variant="outline"
-                          className="w-full"
+                          className="w-full text-[10px] h-7 px-1.5"
                           onClick={() => openPinModal(user)}
                         >
-                          <Lock className="h-3 w-3 mr-1" />
+                          <Lock className="h-2.5 w-2.5 mr-0.5" />
                           {(user as any).transfer_pin ? 'PIN' : 'Set PIN'}
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          className={(user as any).is_admin ? 'text-destructive border-destructive/30' : 'text-primary border-primary/30'}
+                          className={`text-[10px] h-7 px-1.5 ${(user as any).is_admin ? 'text-destructive border-destructive/30' : 'text-primary border-primary/30'}`}
                           onClick={() => openPromoteModal(user)}
                         >
                           {(user as any).is_admin ? (
                             <>
-                              <ShieldOff className="h-3 w-3 mr-1" />
+                              <ShieldOff className="h-2.5 w-2.5 mr-0.5" />
                               Demote
                             </>
                           ) : (
                             <>
-                              <ShieldCheck className="h-3 w-3 mr-1" />
+                              <ShieldCheck className="h-2.5 w-2.5 mr-0.5" />
                               Admin
                             </>
                           )}
@@ -542,10 +543,10 @@ const AdminPage = () => {
                         <Button
                           size="sm"
                           variant="default"
-                          className="w-full"
+                          className="w-full text-[10px] h-7 px-1.5"
                           onClick={() => openUserDetailsModal(user)}
                         >
-                          <Eye className="h-3 w-3 mr-1" />
+                          <Eye className="h-2.5 w-2.5 mr-0.5" />
                           View
                         </Button>
                       </div>
@@ -556,49 +557,47 @@ const AdminPage = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="transactions" className="space-y-4">
+          <TabsContent value="transactions" className="space-y-3">
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Recent Transactions</CardTitle>
-                <p className="text-sm text-muted-foreground">
+              <CardHeader className="p-3 pb-2">
+                <CardTitle className="text-xs">Recent Transactions</CardTitle>
+                <p className="text-[10px] text-muted-foreground">
                   Total volume: ${totalVolume.toFixed(2)}
                 </p>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-3 pt-0">
                 {transactionsLoading ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                  <div className="text-center py-6">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
                   </div>
                 ) : !transactions || transactions.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">No transactions yet</p>
+                  <p className="text-center text-[10px] text-muted-foreground py-6">No transactions yet</p>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-0">
                     {transactions.map((transaction) => (
                       <div 
                         key={transaction.id} 
-                        className="flex items-center justify-between py-3 border-b last:border-0"
+                        className="flex items-center justify-between py-2 border-b last:border-0"
                       >
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-medium truncate">
                             {transaction.description || 'Transfer'}
                           </p>
-                          <p className="text-xs text-muted-foreground">
-                            From: {getUserName(transaction.sender_id)} → To: {getUserName(transaction.recipient_id)}
+                          <p className="text-[9px] text-muted-foreground truncate">
+                            {getUserName(transaction.sender_id)} → {getUserName(transaction.recipient_id)}
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-[9px] text-muted-foreground">
                             {format(new Date(transaction.created_at), 'MMM d, yyyy h:mm a')}
                           </p>
-                          <div className="flex gap-2 mt-1">
-                            <Badge variant="outline" className="text-xs">
-                              {transaction.status}
-                            </Badge>
-                          </div>
+                          <Badge variant="outline" className="text-[8px] h-3.5 px-1 mt-0.5">
+                            {transaction.status}
+                          </Badge>
                         </div>
-                        <div className="text-right">
-                          <p className="font-semibold">
+                        <div className="text-right ml-2">
+                          <p className="text-xs font-semibold">
                             ${transaction.amount.toFixed(2)}
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-[9px] text-muted-foreground">
                             {transaction.currency}
                           </p>
                         </div>

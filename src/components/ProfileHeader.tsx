@@ -28,15 +28,15 @@ export function ProfileHeader({ name = "User", email = "" }: ProfileHeaderProps)
           <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center border-2 border-white/30"
+            className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center border-2 border-white/30"
           >
-            <span className="text-sm font-bold text-white">
+            <span className="text-xs font-bold text-white">
               {initials}
             </span>
           </motion.div>
           <div>
-            <p className="font-semibold text-base text-white">Hello, {displayName.split(" ")[0]}</p>
-            <p className="text-xs text-white/70">{email}</p>
+            <p className="font-medium text-sm text-white">Hello, {displayName.split(" ")[0]}</p>
+            <p className="text-[10px] text-white/70">{email}</p>
           </div>
         </Link>
         <div className="flex items-center gap-1">
