@@ -162,6 +162,7 @@ export function SendMoney() {
         recipientId: selectedContact.user_id,
         amount: amountNum,
         description: `Payment to ${selectedContact.display_name || selectedContact.email || 'user'}`,
+        convertedAmount: needsConversion && convertedAmount ? convertedAmount : undefined,
       });
 
       // Create receipt data

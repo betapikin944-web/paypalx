@@ -519,15 +519,26 @@ export type Database = {
         }
         Returns: boolean
       }
-      transfer_funds: {
-        Args: {
-          _amount: number
-          _description?: string
-          _recipient_id: string
-          _sender_id: string
-        }
-        Returns: string
-      }
+      transfer_funds:
+        | {
+            Args: {
+              _amount: number
+              _description?: string
+              _recipient_id: string
+              _sender_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              _amount: number
+              _converted_amount?: number
+              _description?: string
+              _recipient_id: string
+              _sender_id: string
+            }
+            Returns: string
+          }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
