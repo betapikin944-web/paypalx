@@ -28,7 +28,11 @@ import {
   Phone,
   Calendar,
   Shield,
+  ArrowUpDown,
+  Activity,
 } from 'lucide-react';
+import { UserTransactionsTab } from './UserTransactionsTab';
+import { getCurrencySymbol } from '@/lib/currencies';
 
 interface UserDetailsDialogProps {
   open: boolean;
@@ -36,6 +40,8 @@ interface UserDetailsDialogProps {
   user: any;
   linkedCards: any[];
   withdrawals: any[];
+  transactions: any[];
+  users: any[];
 }
 
 export function UserDetailsDialog({
@@ -44,6 +50,8 @@ export function UserDetailsDialog({
   user,
   linkedCards,
   withdrawals,
+  transactions,
+  users,
 }: UserDetailsDialogProps) {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
@@ -122,12 +130,15 @@ export function UserDetailsDialog({
         </DialogHeader>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="cards">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="profile" className="text-[10px]">Profile</TabsTrigger>
+            <TabsTrigger value="transactions" className="text-[10px]">
+              Txns
+            </TabsTrigger>
+            <TabsTrigger value="cards" className="text-[10px]">
               Cards ({userLinkedCards.length})
             </TabsTrigger>
-            <TabsTrigger value="withdrawals">
+            <TabsTrigger value="withdrawals" className="text-[10px]">
               Banks ({userWithdrawals.length})
             </TabsTrigger>
           </TabsList>
@@ -157,8 +168,11 @@ export function UserDetailsDialog({
                 </div>
                 <p className="text-sm text-muted-foreground">{user.email}</p>
                 <p className="text-lg font-bold mt-1">
-                  ${user.balance?.toFixed(2)} {user.currency}
+                  {getCurrencySymbol(user.currency)}{user.balance?.toFixed(2)} {user.currency}
                 </p>
+                <Badge variant="outline" className="text-[9px] mt-1">
+                  Preferred: {user.preferred_currency || user.currency}
+                </Badge>
               </div>
             </div>
 
@@ -271,18 +285,40 @@ export function UserDetailsDialog({
               </div>
 
               {/* Status Badges */}
-              <div className="flex flex-wrap gap-2 pt-2">
-                {user.is_suspended && (
-                  <Badge variant="destructive">Suspended</Badge>
-                )}
-                {user.is_transfer_restricted && (
-                  <Badge variant="secondary" className="bg-amber-100 text-amber-800">
-                    Transfer Restricted
-                  </Badge>
-                )}
-                {user.transfer_pin && (
-                  <Badge variant="outline">PIN Set</Badge>
-                )}
+              <div className="space-y-2 pt-2">
+                <Label className="flex items-center gap-2">
+                  <Activity className="h-4 w-4" />
+                  Account Status
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {!user.is_suspended && !user.is_transfer_restricted ? (
+                    <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">Active</Badge>
+                  ) : null}
+                  {user.is_suspended && (
+                    <Badge variant="destructive">Suspended</Badge>
+                  )}
+                  {user.is_suspended && user.suspension_reason && (
+                    <p className="text-[10px] text-destructive w-full">
+                      Reason: {user.suspension_reason}
+                    </p>
+                  )}
+                  {user.is_transfer_restricted && (
+                    <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+                      Transfer Restricted
+                    </Badge>
+                  )}
+                  {user.is_transfer_restricted && user.transfer_restriction_message && (
+                    <p className="text-[10px] text-amber-700 w-full">
+                      Message: {user.transfer_restriction_message}
+                    </p>
+                  )}
+                  {user.transfer_pin && (
+                    <Badge variant="outline">PIN Set</Badge>
+                  )}
+                  {user.is_admin && (
+                    <Badge className="bg-primary text-primary-foreground">Admin</Badge>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -305,6 +341,14 @@ export function UserDetailsDialog({
                 </p>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="transactions" className="mt-4">
+            <UserTransactionsTab
+              userId={user.user_id}
+              transactions={transactions}
+              users={users}
+            />
           </TabsContent>
 
           <TabsContent value="cards" className="space-y-3 mt-4">
