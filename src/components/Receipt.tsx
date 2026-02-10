@@ -1,5 +1,6 @@
+import { useRef } from "react";
 import { motion } from "framer-motion";
-import { X, User, Copy, Mail, CheckCircle2, Clock, Loader2, ArrowUpRight, ArrowDownLeft, Shield, Hash } from "lucide-react";
+import { X, User, Copy, Mail, CheckCircle2, Clock, Loader2, ArrowUpRight, ArrowDownLeft, Shield, Hash, Download, Share2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -32,15 +33,25 @@ const PayPalLogo = ({ className = "h-7", white = false }: { className?: string; 
   </svg>
 );
 
-function StatusDot({ active, completed, processing }: { active: boolean; completed: boolean; processing?: boolean }) {
+// Each timeline step gets its own color scheme
+const stepColors = {
+  submitted: { bg: "#003087", icon: "#fff" },
+  processing: { bg: "#0070BA", icon: "#fff" },
+  complete: { bg: "#00A651", icon: "#fff" },
+  inactive: { bg: "#dde0e4", icon: "#a0a4a8" },
+};
+
+function StatusDot({ step, active, completed, processing }: { step: "submitted" | "processing" | "complete"; active: boolean; completed: boolean; processing?: boolean }) {
+  const colors = stepColors[step];
   if (processing) {
     return (
       <motion.div
-        className="w-7 h-7 rounded-full bg-[#0070BA] flex items-center justify-center"
-        animate={{ scale: [1, 1.15, 1] }}
+        className="w-6 h-6 rounded-full flex items-center justify-center"
+        style={{ backgroundColor: colors.bg }}
+        animate={{ scale: [1, 1.1, 1] }}
         transition={{ repeat: Infinity, duration: 1.5 }}
       >
-        <Loader2 className="h-4 w-4 text-white animate-spin" />
+        <Loader2 className="h-3.5 w-3.5 text-white animate-spin" />
       </motion.div>
     );
   }
@@ -50,19 +61,22 @@ function StatusDot({ active, completed, processing }: { active: boolean; complet
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
-        className="w-7 h-7 rounded-full bg-[#00A651] flex items-center justify-center"
+        className="w-6 h-6 rounded-full flex items-center justify-center"
+        style={{ backgroundColor: colors.bg }}
       >
-        <CheckCircle2 className="h-5 w-5 text-white" />
+        <CheckCircle2 className="h-4 w-4 text-white" />
       </motion.div>
     );
   }
   if (active) {
-    return <div className="w-7 h-7 rounded-full bg-[#003087]" />;
+    return <div className="w-6 h-6 rounded-full" style={{ backgroundColor: colors.bg }} />;
   }
-  return <div className="w-7 h-7 rounded-full bg-[#e8e8e8] border-2 border-[#d0d0d0]" />;
+  return <div className="w-6 h-6 rounded-full" style={{ backgroundColor: stepColors.inactive.bg }} />;
 }
 
 export function Receipt({ transaction, type, onClose }: ReceiptProps) {
+  const receiptRef = useRef<HTMLDivElement>(null);
+
   const otherPartyName = type === "sent"
     ? transaction.recipientName || "User"
     : transaction.senderName || "User";
@@ -80,8 +94,60 @@ export function Receipt({ transaction, type, onClose }: ReceiptProps) {
   };
 
   const formattedDate = format(new Date(transaction.created_at), "MMM d, yyyy 'at' h:mm a");
-
   const statusLabel = isCompleted ? "Completed" : isProcessing ? "Processing" : transaction.status;
+
+  const handleShare = async () => {
+    const shareData = {
+      title: `PayPal Receipt`,
+      text: `${type === "sent" ? "Sent" : "Received"} $${transaction.amount.toFixed(2)} ${type === "sent" ? "to" : "from"} ${otherPartyName}\nDate: ${formattedDate}\nTransaction ID: ${transaction.id}`,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareData.text);
+        toast.success("Receipt details copied to clipboard");
+      }
+    } catch {
+      // User cancelled share
+    }
+  };
+
+  const handleDownload = () => {
+    const text = [
+      "PayPal Transaction Receipt",
+      "═".repeat(35),
+      "",
+      `Type: ${type === "sent" ? "Money Sent" : "Money Received"}`,
+      `Amount: $${transaction.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+      `Date: ${formattedDate}`,
+      `Status: ${statusLabel}`,
+      "",
+      `${type === "sent" ? "Sent to" : "Received from"}: ${otherPartyName}`,
+      otherPartyEmail ? `Email: ${otherPartyEmail}` : "",
+      transaction.description ? `Note: ${transaction.description}` : "",
+      "",
+      `Transaction ID: ${transaction.id}`,
+      "",
+      "═".repeat(35),
+      "PayPal Pte. Ltd. · Secure Transaction",
+    ].filter(Boolean).join("\n");
+
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `paypal-receipt-${transaction.id.slice(0, 8)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Receipt downloaded");
+  };
+
+  const handleSaveClipboard = () => {
+    const text = `PayPal Receipt\n${type === "sent" ? "Sent" : "Received"} $${transaction.amount.toFixed(2)} ${type === "sent" ? "to" : "from"} ${otherPartyName}\nDate: ${formattedDate}\nTransaction ID: ${transaction.id}`;
+    navigator.clipboard.writeText(text);
+    toast.success("Receipt saved to clipboard");
+  };
 
   return (
     <motion.div
@@ -91,265 +157,273 @@ export function Receipt({ transaction, type, onClose }: ReceiptProps) {
       className="fixed inset-0 z-50 overflow-auto"
       style={{ backgroundColor: "#f5f7fa" }}
     >
-      {/* Dark Blue Header */}
-      <div style={{ background: "linear-gradient(180deg, #001C64 0%, #003087 100%)" }} className="text-white">
-        {/* Top Bar */}
-        <div className="flex items-center justify-between px-4 pt-4 pb-2">
-          <button
-            onClick={onClose}
-            className="p-2 -ml-2 text-white/80 hover:text-white rounded-full hover:bg-white/10 transition-colors"
-          >
-            <X className="h-6 w-6" />
-          </button>
-          <PayPalLogo className="h-8" white />
-          <div className="w-10" />
-        </div>
-
-        {/* Amount Section */}
-        <div className="text-center px-6 pt-4 pb-8">
-          <div className="flex items-center justify-center mb-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-              type === "sent" ? "bg-white/20" : "bg-[#00A651]/40"
-            }`}>
-              {type === "sent" ? (
-                <ArrowUpRight className="h-5 w-5 text-white" />
-              ) : (
-                <ArrowDownLeft className="h-5 w-5 text-white" />
-              )}
-            </div>
+      <div ref={receiptRef}>
+        {/* Header */}
+        <div style={{ background: "linear-gradient(180deg, #142C8E 0%, #253B80 100%)" }} className="text-white">
+          <div className="flex items-center justify-between px-4 pt-4 pb-2">
+            <button
+              onClick={onClose}
+              className="p-2 -ml-2 text-white/70 hover:text-white rounded-full hover:bg-white/10 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <PayPalLogo className="h-7" white />
+            <div className="w-9" />
           </div>
-          <p className="text-white/70 text-sm mb-1">
-            {type === "sent" ? "You sent" : "You received"}
-          </p>
-          <h1 className="text-5xl font-bold text-white tracking-tight mb-1">
-            ${transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-          </h1>
-          <p className="text-white/50 text-sm mt-2">{formattedDate}</p>
 
-          {/* Status Badge */}
-          <div className="flex justify-center mt-4">
-            <div className={`inline-flex items-center gap-2 px-5 py-2 rounded-full ${
-              isCompleted ? "bg-[#00A651]/20 border border-[#00A651]/30" : isProcessing ? "bg-white/10 border border-white/20" : "bg-white/10 border border-white/20"
-            }`}>
-              {isCompleted ? (
-                <CheckCircle2 className="h-4 w-4 text-[#00A651]" />
-              ) : isProcessing ? (
-                <Loader2 className="h-4 w-4 text-white animate-spin" />
-              ) : (
-                <Clock className="h-4 w-4 text-white/70" />
-              )}
-              <span className={`text-sm font-semibold capitalize ${
-                isCompleted ? "text-[#00A651]" : "text-white"
+          {/* Amount */}
+          <div className="text-center px-6 pt-3 pb-7">
+            <div className="flex items-center justify-center mb-2">
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
+                type === "sent" ? "bg-white/15" : "bg-[#00A651]/30"
               }`}>
+                {type === "sent" ? (
+                  <ArrowUpRight className="h-4 w-4 text-white/90" />
+                ) : (
+                  <ArrowDownLeft className="h-4 w-4 text-white/90" />
+                )}
+              </div>
+            </div>
+            <p className="text-white/60 text-xs mb-0.5">
+              {type === "sent" ? "You sent" : "You received"}
+            </p>
+            <h1 className="text-4xl font-semibold text-white tracking-tight">
+              ${transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </h1>
+            <p className="text-white/40 text-xs mt-1.5">{formattedDate}</p>
+
+            {/* Status */}
+            <div className="flex justify-center mt-3">
+              <div className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium ${
+                isCompleted
+                  ? "bg-[#00A651]/20 text-[#7dd3a8]"
+                  : isProcessing
+                  ? "bg-white/10 text-white/80"
+                  : "bg-white/10 text-white/60"
+              }`}>
+                {isCompleted ? (
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                ) : isProcessing ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Clock className="h-3.5 w-3.5" />
+                )}
                 {statusLabel}
-              </span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Content Cards */}
-      <div className="px-4 pb-8 -mt-2">
-        {/* Recipient / Sender Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="bg-white rounded-2xl p-5 mb-3 shadow-sm border border-[#e8e8e8]"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-[#003087] flex items-center justify-center shrink-0">
-              <User className="h-6 w-6 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] text-[#687173] uppercase tracking-wider font-semibold">
-                {type === "sent" ? "SENT TO" : "RECEIVED FROM"}
-              </p>
-              <p className="text-lg font-semibold text-[#1a1a2e] truncate">{otherPartyName}</p>
-              {otherPartyEmail && (
-                <p className="text-sm text-[#687173] truncate">{otherPartyEmail}</p>
-              )}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Transfer Status Timeline */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="bg-white rounded-2xl p-5 mb-3 shadow-sm border border-[#e8e8e8]"
-        >
-          <h2 className="text-[11px] font-semibold text-[#687173] mb-5 uppercase tracking-wider">
-            TRANSFER STATUS
-          </h2>
-
-          <div className="relative pl-10">
-            {/* Timeline Line */}
-            <div className="absolute left-[13px] top-4 bottom-4 w-[3px]">
-              <div className="h-full bg-[#e8e8e8] rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ height: "0%" }}
-                  animate={{ height: isCompleted ? "100%" : isProcessing ? "50%" : "15%" }}
-                  transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
-                  className={`w-full ${isCompleted ? "bg-[#00A651]" : "bg-[#0070BA]"}`}
-                />
-              </div>
-            </div>
-
-            {/* Submitted */}
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="relative mb-7"
-            >
-              <div className="absolute left-[-40px] top-0">
-                <StatusDot active completed />
-              </div>
-              <div>
-                <p className="text-[15px] font-semibold text-[#1a1a2e]">Submitted</p>
-                <p className="text-sm text-[#687173]">Payment initiated successfully</p>
-              </div>
-            </motion.div>
-
-            {/* Processing */}
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.45 }}
-              className="relative mb-7"
-            >
-              <div className="absolute left-[-40px] top-0">
-                <StatusDot
-                  active={isProcessing || isCompleted}
-                  completed={isCompleted}
-                  processing={isProcessing}
-                />
-              </div>
-              <div>
-                <p className={`text-[15px] font-semibold ${isProcessing || isCompleted ? 'text-[#1a1a2e]' : 'text-[#b0b0b0]'}`}>
-                  Processing
-                </p>
-                <p className="text-sm text-[#687173]">
-                  {isProcessing ? "Verifying transaction..." : isCompleted ? "Verification complete" : "Awaiting confirmation"}
-                </p>
-              </div>
-            </motion.div>
-
-            {/* Complete */}
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6 }}
-              className="relative"
-            >
-              <div className="absolute left-[-40px] top-0">
-                <StatusDot active={isCompleted} completed={isCompleted} />
-              </div>
-              <div>
-                <p className={`text-[15px] font-semibold ${isCompleted ? 'text-[#1a1a2e]' : 'text-[#b0b0b0]'}`}>
-                  Complete
-                </p>
-                <p className={`text-sm ${isCompleted ? 'text-[#00A651] font-medium' : 'text-[#687173]'}`}>
-                  {isCompleted ? `$${transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} transferred` : "Pending completion"}
-                </p>
-              </div>
-            </motion.div>
-          </div>
-        </motion.div>
-
-        {/* Transaction Details */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
-          className="bg-white rounded-2xl p-5 mb-3 shadow-sm border border-[#e8e8e8]"
-        >
-          <h2 className="text-[11px] font-semibold text-[#687173] mb-4 uppercase tracking-wider">
-            TRANSACTION DETAILS
-          </h2>
-
-          <div className="space-y-4">
-            {/* Transaction ID */}
+        {/* Cards */}
+        <div className="px-4 pb-6 -mt-1.5">
+          {/* To / From */}
+          <div className="bg-white rounded-xl p-4 mb-2.5" style={{ border: "1px solid #eaedf0" }}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#003087]/10 flex items-center justify-center shrink-0">
-                <Hash className="h-5 w-5 text-[#003087]" />
+              <div className="w-11 h-11 rounded-full bg-[#253B80] flex items-center justify-center shrink-0">
+                <User className="h-5 w-5 text-white/90" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-[#687173]">Transaction ID</p>
-                <p className="font-mono text-sm text-[#1a1a2e] truncate">{transaction.id}</p>
+                <p className="text-[10px] text-[#8b9099] uppercase tracking-wider font-medium">
+                  {type === "sent" ? "Sent to" : "Received from"}
+                </p>
+                <p className="text-[15px] font-medium text-[#2c2e2f] truncate">{otherPartyName}</p>
+                {otherPartyEmail && (
+                  <p className="text-xs text-[#8b9099] truncate">{otherPartyEmail}</p>
+                )}
               </div>
-              <button
-                onClick={handleCopy}
-                className="p-2 hover:bg-[#f0f0f0] rounded-full transition-colors shrink-0"
-              >
-                <Copy className="h-5 w-5 text-[#0070BA]" />
-              </button>
             </div>
-
-            {/* Email */}
-            {otherPartyEmail && (
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#003087]/10 flex items-center justify-center shrink-0">
-                  <Mail className="h-5 w-5 text-[#003087]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-[#687173]">
-                    {type === "sent" ? "Recipient Email" : "Sender Email"}
-                  </p>
-                  <p className="text-sm font-medium text-[#1a1a2e] truncate">{otherPartyEmail}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Note */}
-            {transaction.description && (
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#003087]/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <Mail className="h-5 w-5 text-[#003087]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-[#687173]">Note</p>
-                  <p className="text-sm text-[#1a1a2e]">{transaction.description}</p>
-                </div>
-              </div>
-            )}
           </div>
-        </motion.div>
 
-        {/* Purchase Protection */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.45 }}
-          className="flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-white border border-[#e8e8e8] mb-5 shadow-sm"
-        >
-          <Shield className="h-5 w-5 text-[#003087] shrink-0" />
-          <div>
-            <p className="text-sm font-semibold text-[#003087]">Purchase Protection</p>
-            <p className="text-xs text-[#687173]">
-              Eligible purchases are covered by PayPal Buyer Protection
+          {/* Transfer Status */}
+          <div className="bg-white rounded-xl p-4 mb-2.5" style={{ border: "1px solid #eaedf0" }}>
+            <h2 className="text-[10px] font-medium text-[#8b9099] mb-4 uppercase tracking-wider">
+              Transfer Status
+            </h2>
+
+            <div className="relative pl-9">
+              {/* Timeline line */}
+              <div className="absolute left-[11px] top-3 bottom-3 w-[2px]">
+                <div className="h-full bg-[#eaedf0] rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ height: "0%" }}
+                    animate={{ height: isCompleted ? "100%" : isProcessing ? "50%" : "15%" }}
+                    transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
+                    className="w-full"
+                    style={{
+                      background: isCompleted
+                        ? "linear-gradient(180deg, #003087, #0070BA, #00A651)"
+                        : "linear-gradient(180deg, #003087, #0070BA)",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Submitted */}
+              <motion.div
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.25 }}
+                className="relative mb-5"
+              >
+                <div className="absolute left-[-36px] top-0">
+                  <StatusDot step="submitted" active completed />
+                </div>
+                <p className="text-sm font-medium text-[#2c2e2f]">Submitted</p>
+                <p className="text-xs text-[#8b9099]">Payment initiated successfully</p>
+              </motion.div>
+
+              {/* Processing */}
+              <motion.div
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+                className="relative mb-5"
+              >
+                <div className="absolute left-[-36px] top-0">
+                  <StatusDot
+                    step="processing"
+                    active={isProcessing || isCompleted}
+                    completed={isCompleted}
+                    processing={isProcessing}
+                  />
+                </div>
+                <p className={`text-sm font-medium ${isProcessing || isCompleted ? "text-[#2c2e2f]" : "text-[#c0c3c8]"}`}>
+                  Processing
+                </p>
+                <p className="text-xs text-[#8b9099]">
+                  {isProcessing ? "Verifying transaction..." : isCompleted ? "Verification complete" : "Awaiting confirmation"}
+                </p>
+              </motion.div>
+
+              {/* Complete */}
+              <motion.div
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.55 }}
+                className="relative"
+              >
+                <div className="absolute left-[-36px] top-0">
+                  <StatusDot step="complete" active={isCompleted} completed={isCompleted} />
+                </div>
+                <p className={`text-sm font-medium ${isCompleted ? "text-[#2c2e2f]" : "text-[#c0c3c8]"}`}>
+                  Complete
+                </p>
+                <p className={`text-xs ${isCompleted ? "text-[#00A651]" : "text-[#8b9099]"}`}>
+                  {isCompleted
+                    ? `$${transaction.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })} transferred`
+                    : "Pending completion"}
+                </p>
+              </motion.div>
+            </div>
+          </div>
+
+          {/* Transaction Details */}
+          <div className="bg-white rounded-xl p-4 mb-2.5" style={{ border: "1px solid #eaedf0" }}>
+            <h2 className="text-[10px] font-medium text-[#8b9099] mb-3 uppercase tracking-wider">
+              Transaction Details
+            </h2>
+
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-[#f0f2f5] flex items-center justify-center shrink-0">
+                  <Hash className="h-4 w-4 text-[#6c7078]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-[#8b9099]">Transaction ID</p>
+                  <p className="font-mono text-xs text-[#2c2e2f] truncate">{transaction.id}</p>
+                </div>
+                <button
+                  onClick={handleCopy}
+                  className="p-1.5 hover:bg-[#f0f2f5] rounded-lg transition-colors shrink-0"
+                >
+                  <Copy className="h-4 w-4 text-[#0070BA]" />
+                </button>
+              </div>
+
+              {otherPartyEmail && (
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-[#f0f2f5] flex items-center justify-center shrink-0">
+                    <Mail className="h-4 w-4 text-[#6c7078]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-[#8b9099]">
+                      {type === "sent" ? "Recipient Email" : "Sender Email"}
+                    </p>
+                    <p className="text-xs text-[#2c2e2f] truncate">{otherPartyEmail}</p>
+                  </div>
+                </div>
+              )}
+
+              {transaction.description && (
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-full bg-[#f0f2f5] flex items-center justify-center shrink-0 mt-0.5">
+                    <FileText className="h-4 w-4 text-[#6c7078]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-[#8b9099]">Note</p>
+                    <p className="text-xs text-[#2c2e2f]">{transaction.description}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Protection */}
+          <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-white mb-4" style={{ border: "1px solid #eaedf0" }}>
+            <Shield className="h-4 w-4 text-[#253B80] shrink-0" />
+            <div>
+              <p className="text-xs font-medium text-[#253B80]">Purchase Protection</p>
+              <p className="text-[10px] text-[#8b9099]">
+                Eligible purchases covered by PayPal Buyer Protection
+              </p>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <button
+              onClick={handleDownload}
+              className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-white hover:bg-[#f5f7fa] transition-colors"
+              style={{ border: "1px solid #eaedf0" }}
+            >
+              <Download className="h-5 w-5 text-[#253B80]" />
+              <span className="text-[10px] font-medium text-[#2c2e2f]">Download</span>
+            </button>
+            <button
+              onClick={handleSaveClipboard}
+              className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-white hover:bg-[#f5f7fa] transition-colors"
+              style={{ border: "1px solid #eaedf0" }}
+            >
+              <FileText className="h-5 w-5 text-[#253B80]" />
+              <span className="text-[10px] font-medium text-[#2c2e2f]">Save</span>
+            </button>
+            <button
+              onClick={handleShare}
+              className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-white hover:bg-[#f5f7fa] transition-colors"
+              style={{ border: "1px solid #eaedf0" }}
+            >
+              <Share2 className="h-5 w-5 text-[#253B80]" />
+              <span className="text-[10px] font-medium text-[#2c2e2f]">Share</span>
+            </button>
+          </div>
+
+          {/* Footer */}
+          <div className="text-center mb-4">
+            <PayPalLogo className="h-5 mx-auto mb-1.5 opacity-25" />
+            <p className="text-[10px] text-[#b0b3b8]">
+              PayPal Pte. Ltd. · Secure Transaction
             </p>
           </div>
-        </motion.div>
 
-        {/* Footer */}
-        <div className="text-center mb-5">
-          <PayPalLogo className="h-6 mx-auto mb-2 opacity-30" />
-          <p className="text-[11px] text-[#b0b0b0]">
-            PayPal Pte. Ltd. · Secure Transaction
-          </p>
+          {/* Done Button */}
+          <Button
+            onClick={onClose}
+            className="w-full rounded-full h-12 text-sm font-medium"
+            style={{ backgroundColor: "#253B80" }}
+          >
+            Done
+          </Button>
         </div>
-
-        {/* Close Button */}
-        <Button
-          onClick={onClose}
-          className="w-full rounded-full h-13 text-base font-semibold"
-          style={{ backgroundColor: "#003087" }}
-        >
-          Done
-        </Button>
       </div>
     </motion.div>
   );
