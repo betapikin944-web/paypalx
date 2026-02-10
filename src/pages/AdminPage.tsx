@@ -925,6 +925,8 @@ const AdminPage = () => {
         user={selectedUser}
         linkedCards={allLinkedCards || []}
         withdrawals={allWithdrawals || []}
+        transactions={transactions || []}
+        users={users || []}
       />
 
       {/* Currency Credit Dialog */}
