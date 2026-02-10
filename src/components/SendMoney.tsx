@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Search, X, Loader2, Lock, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Search, X, Loader2, Lock, AlertTriangle, Clock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Receipt } from "./Receipt";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { toast } from "sonner";
+import { useRecentBeneficiaries } from "@/hooks/useBeneficiaries";
 
 export function SendMoney() {
   const navigate = useNavigate();
@@ -32,6 +33,7 @@ export function SendMoney() {
 
   const { data: searchResults, isLoading: isSearching } = useSearchProfiles(searchTerm);
   const { data: balance } = useBalance();
+  const { data: recentBeneficiaries, isLoading: beneficiariesLoading } = useRecentBeneficiaries();
   const sendMoney = useSendMoney();
 
   // Check user restrictions on mount
@@ -209,6 +211,59 @@ export function SendMoney() {
               </p>
             </div>
 
+            {/* Recent Beneficiaries */}
+            {!searchTerm && recentBeneficiaries && recentBeneficiaries.length > 0 && (
+              <div className="px-4 mb-4">
+                <h2 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" />
+                  Recent
+                </h2>
+                <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+                  {recentBeneficiaries.map((b, index) => (
+                    <motion.button
+                      key={b.user_id}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() =>
+                        handleContactSelect({
+                          id: b.user_id,
+                          user_id: b.user_id,
+                          display_name: b.display_name,
+                          email: b.email,
+                          avatar_url: b.avatar_url,
+                          phone_number: null,
+                          created_at: '',
+                          updated_at: '',
+                          is_suspended: null,
+                          is_transfer_restricted: null,
+                          suspension_reason: null,
+                          transfer_pin: null,
+                          transfer_restriction_message: null,
+                        } as Profile)
+                      }
+                      disabled={isRestricted}
+                      className="flex flex-col items-center gap-1.5 min-w-[64px] disabled:opacity-50"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                        {b.avatar_url ? (
+                          <img src={b.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                        ) : (
+                          <span className="text-xs font-bold text-primary-foreground">
+                            {getInitials(b.display_name, b.email)}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-foreground font-medium truncate max-w-[64px]">
+                        {b.display_name || b.email?.split('@')[0] || 'User'}
+                      </span>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Search Results */}
             <div className="px-4 flex-1">
               {isSearching ? (
@@ -234,7 +289,7 @@ export function SendMoney() {
                           {profile.avatar_url ? (
                             <img src={profile.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
                           ) : (
-                            <span className="text-base font-bold text-white">
+                            <span className="text-base font-bold text-primary-foreground">
                               {getInitials(profile.display_name, profile.email)}
                             </span>
                           )}
@@ -259,7 +314,7 @@ export function SendMoney() {
                   <p className="text-muted-foreground font-medium">No users found</p>
                   <p className="text-sm text-muted-foreground mt-1">Try a different search term</p>
                 </motion.div>
-              ) : (
+              ) : !recentBeneficiaries?.length ? (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -271,7 +326,7 @@ export function SendMoney() {
                   <p className="text-foreground font-medium">Find someone to pay</p>
                   <p className="text-sm text-muted-foreground mt-1">Enter their email or name above</p>
                 </motion.div>
-              )}
+              ) : null}
             </div>
           </motion.div>
         ) : step === "amount" ? (
