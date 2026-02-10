@@ -10,8 +10,14 @@ export interface Profile {
   avatar_url: string | null;
   phone_number: string | null;
   email: string | null;
+  preferred_currency: string;
   created_at: string;
   updated_at: string;
+  is_suspended: boolean | null;
+  is_transfer_restricted: boolean | null;
+  suspension_reason: string | null;
+  transfer_pin: string | null;
+  transfer_restriction_message: string | null;
 }
 
 export function useProfile() {

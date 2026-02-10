@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { LinkCardDialog } from "./LinkCardDialog";
 import { WithdrawalDialog } from "./WithdrawalDialog";
+import { getCurrencySymbol } from "@/lib/currencies";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,19 +14,20 @@ import {
 
 interface BalanceCardProps {
   balance: number;
+  currency?: string;
 }
 
-export function BalanceCard({ balance }: BalanceCardProps) {
+export function BalanceCard({ balance, currency = "USD" }: BalanceCardProps) {
   const [showBalance, setShowBalance] = useState(true);
   const [showLinkCard, setShowLinkCard] = useState(false);
   const [showWithdrawal, setShowWithdrawal] = useState(false);
 
   const formatBalance = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
+    const symbol = getCurrencySymbol(currency);
+    return `${symbol}${amount.toLocaleString("en-US", {
       minimumFractionDigits: 2,
-    }).format(amount);
+      maximumFractionDigits: 2,
+    })}`;
   };
 
   return (

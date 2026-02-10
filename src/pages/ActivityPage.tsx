@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
 import { Receipt } from "@/components/Receipt";
 import { format, isToday, isYesterday, subDays, subMonths } from "date-fns";
+import { getCurrencySymbol } from "@/lib/currencies";
 
 type FilterType = "all" | "sent" | "received";
 type DateRange = "all" | "7d" | "30d" | "90d";
@@ -17,6 +19,9 @@ export default function ActivityPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: transactions, isLoading } = useTransactions();
+  const { data: profile } = useProfile();
+  const userCurrency = (profile as any)?.preferred_currency || 'USD';
+  const cs = getCurrencySymbol(userCurrency);
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [filter, setFilter] = useState<FilterType>("all");
   const [dateRange, setDateRange] = useState<DateRange>("all");
@@ -155,14 +160,14 @@ export default function ActivityPage() {
               <ArrowUpRight className="h-3 w-3" />
               <span className="text-[10px] text-white/80">Money Out</span>
             </div>
-            <p className="text-lg font-bold">${summary.sent.toFixed(2)}</p>
+            <p className="text-lg font-bold">{cs}{summary.sent.toFixed(2)}</p>
           </div>
           <div className="bg-white/10 backdrop-blur rounded-xl p-3">
             <div className="flex items-center gap-1.5 mb-1">
               <ArrowDownLeft className="h-3 w-3" />
               <span className="text-[10px] text-white/80">Money In</span>
             </div>
-            <p className="text-lg font-bold">${summary.received.toFixed(2)}</p>
+            <p className="text-lg font-bold">{cs}{summary.received.toFixed(2)}</p>
           </div>
         </div>
       </div>
@@ -335,7 +340,7 @@ export default function ActivityPage() {
                         </div>
                         <div className="text-right">
                           <p className={`text-xs font-semibold ${isSent ? "text-foreground" : "text-emerald-600"}`}>
-                            {isSent ? "-" : "+"}${transaction.amount.toFixed(2)}
+                            {isSent ? "-" : "+"}{cs}{transaction.amount.toFixed(2)}
                           </p>
                           <p className="text-[10px] text-muted-foreground capitalize">
                             {transaction.status}
