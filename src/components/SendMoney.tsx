@@ -20,7 +20,8 @@ export function SendMoney() {
   const [amount, setAmount] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContact, setSelectedContact] = useState<Profile | null>(null);
-  const [step, setStep] = useState<"select" | "amount" | "pin" | "success">("select");
+  const [step, setStep] = useState<"select" | "amount" | "confirm" | "pin" | "success">("select");
+  const [isSending, setIsSending] = useState(false);
   const [completedTransaction, setCompletedTransaction] = useState<any>(null);
   
   // Restriction and PIN state
@@ -102,12 +103,19 @@ export function SendMoney() {
     const amountNum = parseFloat(amount);
     if (amountNum <= 0) return;
 
+    // Show confirmation step first
+    if (step === "amount") {
+      setStep("confirm");
+      return;
+    }
+
     // Check if PIN is required
-    if (requiresPin && step === "amount") {
+    if (requiresPin && step === "confirm") {
       setStep("pin");
       return;
     }
     
+    setIsSending(true);
     try {
       await sendMoney.mutateAsync({
         recipientId: selectedContact.user_id,
@@ -129,6 +137,8 @@ export function SendMoney() {
       setStep("success");
     } catch (error) {
       // Error handled by mutation
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -186,7 +196,8 @@ export function SendMoney() {
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={() => {
-            if (step === "pin") setStep("amount");
+            if (step === "pin") setStep("confirm");
+            else if (step === "confirm") setStep("amount");
             else if (step === "amount") setStep("select");
             else navigate("/");
           }}
@@ -195,7 +206,7 @@ export function SendMoney() {
           <ArrowLeft className="h-5 w-5" />
         </motion.button>
         <h1 className="text-xl font-semibold">
-          {step === "select" ? "Send Money" : step === "pin" ? "Enter PIN" : `To ${selectedContact?.display_name || selectedContact?.email?.split('@')[0] || 'User'}`}
+          {step === "select" ? "Send Money" : step === "pin" ? "Enter PIN" : step === "confirm" ? "Confirm Payment" : `To ${selectedContact?.display_name || selectedContact?.email?.split('@')[0] || 'User'}`}
         </h1>
       </div>
 
@@ -480,17 +491,109 @@ export function SendMoney() {
                 </motion.button>
               </div>
               <Button
-                disabled={!amount || parseFloat(amount) === 0 || parseFloat(amount) > Number(balance?.amount || 0) || sendMoney.isPending}
+                disabled={!amount || parseFloat(amount) === 0 || parseFloat(amount) > Number(balance?.amount || 0)}
                 onClick={handlePay}
                 className="w-full h-14 text-lg font-semibold rounded-full"
               >
-                {sendMoney.isPending ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  `Send $${amount || "0"}`
-                )}
+                {`Send $${amount || "0"}`}
               </Button>
             </div>
+          </motion.div>
+        ) : step === "confirm" ? (
+          <motion.div
+            key="confirm"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="flex-1 flex flex-col items-center justify-center p-6"
+          >
+            {isSending ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center gap-4"
+              >
+                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                </div>
+                <p className="text-lg font-semibold text-foreground">Sending payment...</p>
+                <p className="text-sm text-muted-foreground">Please wait while we process your transfer</p>
+              </motion.div>
+            ) : (
+              <>
+                {/* Confirmation Card */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-sm mb-6"
+                >
+                  <div className="text-center mb-5">
+                    <p className="text-sm text-muted-foreground mb-1">You are sending</p>
+                    <p className="text-4xl font-bold text-foreground">${parseFloat(amount).toFixed(2)}</p>
+                  </div>
+
+                  <div className="border-t border-border pt-4 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
+                        <span className="text-xs font-bold text-primary-foreground">
+                          {getInitials(selectedContact?.display_name || null, selectedContact?.email || null)}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-muted-foreground">To</p>
+                        <p className="font-semibold text-foreground truncate">
+                          {selectedContact?.display_name || selectedContact?.email?.split('@')[0] || 'User'}
+                        </p>
+                        {selectedContact?.email && (
+                          <p className="text-xs text-muted-foreground truncate">{selectedContact.email}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border mt-4 pt-4">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Amount</span>
+                      <span className="font-semibold text-foreground">${parseFloat(amount).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm mt-1">
+                      <span className="text-muted-foreground">Fee</span>
+                      <span className="font-medium text-[#00A651]">Free</span>
+                    </div>
+                    <div className="flex justify-between text-sm mt-2 pt-2 border-t border-border">
+                      <span className="font-semibold text-foreground">Total</span>
+                      <span className="font-bold text-foreground">${parseFloat(amount).toFixed(2)}</span>
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-xs text-muted-foreground text-center mb-6 px-4"
+                >
+                  Please review the details above before confirming. This action cannot be undone.
+                </motion.p>
+
+                <div className="w-full max-w-sm space-y-3">
+                  <Button
+                    onClick={handlePay}
+                    disabled={sendMoney.isPending}
+                    className="w-full h-14 text-lg font-semibold rounded-full"
+                  >
+                    Confirm & Send ${parseFloat(amount).toFixed(2)}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setStep("amount")}
+                    className="w-full h-12 rounded-full"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </>
+            )}
           </motion.div>
         ) : step === "pin" ? (
           <motion.div
