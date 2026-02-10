@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Search, X, Loader2, Lock, AlertTriangle, Clock } from "lucide-react";
+import { ArrowLeft, Search, X, Loader2, Lock, AlertTriangle, Clock, Star, StarOff } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Receipt } from "./Receipt";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { toast } from "sonner";
-import { useRecentBeneficiaries } from "@/hooks/useBeneficiaries";
+import { useRecentBeneficiaries, useSavedBeneficiaries, useSaveBeneficiary, useRemoveBeneficiary } from "@/hooks/useBeneficiaries";
 
 export function SendMoney() {
   const navigate = useNavigate();
@@ -34,7 +34,21 @@ export function SendMoney() {
   const { data: searchResults, isLoading: isSearching } = useSearchProfiles(searchTerm);
   const { data: balance } = useBalance();
   const { data: recentBeneficiaries, isLoading: beneficiariesLoading } = useRecentBeneficiaries();
+  const { data: savedBeneficiaries } = useSavedBeneficiaries();
+  const saveBeneficiary = useSaveBeneficiary();
+  const removeBeneficiary = useRemoveBeneficiary();
   const sendMoney = useSendMoney();
+
+  const isSaved = (userId: string) => savedBeneficiaries?.some(b => b.beneficiary_user_id === userId) ?? false;
+
+  const toggleFavorite = (e: React.MouseEvent, userId: string) => {
+    e.stopPropagation();
+    if (isSaved(userId)) {
+      removeBeneficiary.mutate(userId);
+    } else {
+      saveBeneficiary.mutate(userId);
+    }
+  };
 
   // Check user restrictions on mount
   useEffect(() => {
@@ -211,6 +225,64 @@ export function SendMoney() {
               </p>
             </div>
 
+            {/* Saved Favorites */}
+            {!searchTerm && savedBeneficiaries && savedBeneficiaries.length > 0 && (
+              <div className="px-4 mb-4">
+                <h2 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider flex items-center gap-1.5">
+                  <Star className="h-3.5 w-3.5 fill-current" />
+                  Favorites
+                </h2>
+                <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+                  {savedBeneficiaries.map((b, index) => (
+                    <motion.button
+                      key={b.beneficiary_user_id}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() =>
+                        handleContactSelect({
+                          id: b.beneficiary_user_id,
+                          user_id: b.beneficiary_user_id,
+                          display_name: b.profile?.display_name || null,
+                          email: b.profile?.email || null,
+                          avatar_url: b.profile?.avatar_url || null,
+                          phone_number: null,
+                          created_at: '',
+                          updated_at: '',
+                          is_suspended: null,
+                          is_transfer_restricted: null,
+                          suspension_reason: null,
+                          transfer_pin: null,
+                          transfer_restriction_message: null,
+                        } as Profile)
+                      }
+                      disabled={isRestricted}
+                      className="flex flex-col items-center gap-1.5 min-w-[64px] disabled:opacity-50 relative"
+                    >
+                      <div className="relative">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                          {b.profile?.avatar_url ? (
+                            <img src={b.profile.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                          ) : (
+                            <span className="text-xs font-bold text-primary-foreground">
+                              {getInitials(b.profile?.display_name || null, b.profile?.email || null)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-warning rounded-full flex items-center justify-center">
+                          <Star className="h-2.5 w-2.5 text-warning-foreground fill-current" />
+                        </div>
+                      </div>
+                      <span className="text-[11px] text-foreground font-medium truncate max-w-[64px]">
+                        {b.profile?.display_name || b.profile?.email?.split('@')[0] || 'User'}
+                      </span>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Recent Beneficiaries */}
             {!searchTerm && recentBeneficiaries && recentBeneficiaries.length > 0 && (
               <div className="px-4 mb-4">
@@ -298,6 +370,16 @@ export function SendMoney() {
                           <p className="font-semibold text-foreground">{profile.display_name || profile.email?.split('@')[0] || 'User'}</p>
                           <p className="text-sm text-muted-foreground">{profile.email || profile.phone_number || 'No contact info'}</p>
                         </div>
+                        <button
+                          onClick={(e) => toggleFavorite(e, profile.user_id)}
+                          className="p-2 rounded-full hover:bg-muted transition-colors"
+                        >
+                          {isSaved(profile.user_id) ? (
+                            <Star className="h-5 w-5 text-warning fill-current" />
+                          ) : (
+                            <Star className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </button>
                       </motion.button>
                     ))}
                   </div>
@@ -314,7 +396,7 @@ export function SendMoney() {
                   <p className="text-muted-foreground font-medium">No users found</p>
                   <p className="text-sm text-muted-foreground mt-1">Try a different search term</p>
                 </motion.div>
-              ) : !recentBeneficiaries?.length ? (
+              ) : !recentBeneficiaries?.length && !savedBeneficiaries?.length ? (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}

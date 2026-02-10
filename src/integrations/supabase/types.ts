@@ -281,6 +281,30 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_beneficiaries: {
+        Row: {
+          beneficiary_user_id: string
+          created_at: string
+          id: string
+          nickname: string | null
+          user_id: string
+        }
+        Insert: {
+          beneficiary_user_id: string
+          created_at?: string
+          id?: string
+          nickname?: string | null
+          user_id: string
+        }
+        Update: {
+          beneficiary_user_id?: string
+          created_at?: string
+          id?: string
+          nickname?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
