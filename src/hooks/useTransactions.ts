@@ -81,11 +81,13 @@ export function useSendMoney() {
     mutationFn: async ({ 
       recipientId, 
       amount, 
-      description 
+      description,
+      convertedAmount,
     }: { 
       recipientId: string; 
       amount: number; 
       description?: string;
+      convertedAmount?: number;
     }) => {
       if (!user) throw new Error('Not authenticated');
 
@@ -108,7 +110,8 @@ export function useSendMoney() {
           _sender_id: user.id,
           _recipient_id: recipientId,
           _amount: amount,
-          _description: description || null
+          _description: description || null,
+          _converted_amount: convertedAmount || null,
         });
 
       if (transferError) {
