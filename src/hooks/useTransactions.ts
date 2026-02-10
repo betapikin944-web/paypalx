@@ -82,12 +82,14 @@ export function useSendMoney() {
       recipientId, 
       amount, 
       description,
-      convertedAmount,
+      senderCurrency,
+      recipientCurrency,
     }: { 
       recipientId: string; 
       amount: number; 
       description?: string;
-      convertedAmount?: number;
+      senderCurrency?: string;
+      recipientCurrency?: string;
     }) => {
       if (!user) throw new Error('Not authenticated');
 
@@ -104,23 +106,29 @@ export function useSendMoney() {
         .eq('user_id', recipientId)
         .single();
 
-      // Use the secure database function to handle the transfer atomically
-      const { data: transactionId, error: transferError } = await supabase
-        .rpc('transfer_funds', {
-          _sender_id: user.id,
-          _recipient_id: recipientId,
-          _amount: amount,
-          _description: description || null,
-          _converted_amount: convertedAmount || null,
-        });
+      // Use edge function for currency-aware transfer
+      const { data, error: transferError } = await supabase.functions.invoke('transfer-with-conversion', {
+        body: {
+          recipientId,
+          amount,
+          description: description || null,
+          senderCurrency: senderCurrency || 'USD',
+          recipientCurrency: recipientCurrency || 'USD',
+        },
+      });
 
       if (transferError) {
-        // Parse the error message for user-friendly display
-        if (transferError.message.includes('Insufficient balance')) {
+        throw new Error(transferError.message || 'Transfer failed');
+      }
+
+      if (data?.error) {
+        if (data.error.includes('Insufficient balance')) {
           throw new Error('Insufficient balance');
         }
-        throw transferError;
+        throw new Error(data.error);
       }
+
+      const transactionId = data?.transactionId;
 
       // Get the created transaction for email
       const { data: newTransaction } = await supabase
