@@ -85,8 +85,10 @@ export function Receipt({ transaction, type, onClose }: ReceiptProps) {
     ? transaction.recipientEmail
     : transaction.senderEmail;
 
-  const isCompleted = transaction.status === "completed";
-  const isProcessing = transaction.status === "processing" || transaction.status === "pending";
+  const status = transaction.status?.toLowerCase() || "completed";
+  const isCompleted = status === "completed" || status === "successful";
+  const isProcessing = status === "processing" || status === "pending";
+  const isDeclined = status === "declined" || status === "failed";
 
   const handleCopy = () => {
     navigator.clipboard.writeText(transaction.id);
@@ -94,7 +96,7 @@ export function Receipt({ transaction, type, onClose }: ReceiptProps) {
   };
 
   const formattedDate = format(new Date(transaction.created_at), "MMM d, yyyy 'at' h:mm a");
-  const statusLabel = isCompleted ? "Completed" : isProcessing ? "Processing" : transaction.status;
+  const statusLabel = isCompleted ? "Completed" : isProcessing ? "Processing" : isDeclined ? (status === "declined" ? "Declined" : "Failed") : transaction.status;
 
   const handleShare = async () => {
     const shareData = {
@@ -152,7 +154,10 @@ export function Receipt({ transaction, type, onClose }: ReceiptProps) {
     const rightMargin = pageWidth - 20;
 
     // Status badge
-    doc.setFillColor(isCompleted ? 0 : 0, isCompleted ? 166 : 112, isCompleted ? 81 : 186);
+    const badgeR = isCompleted ? 0 : isDeclined ? 239 : 0;
+    const badgeG = isCompleted ? 166 : isDeclined ? 68 : 112;
+    const badgeB = isCompleted ? 81 : isDeclined ? 68 : 186;
+    doc.setFillColor(badgeR, badgeG, badgeB);
     doc.roundedRect(pageWidth / 2 - 20, y - 5, 40, 8, 2, 2, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(8);
@@ -328,12 +333,16 @@ export function Receipt({ transaction, type, onClose }: ReceiptProps) {
               <div className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium ${
                 isCompleted
                   ? "bg-[#00A651]/20 text-[#7dd3a8]"
+                  : isDeclined
+                  ? "bg-red-500/20 text-red-300"
                   : isProcessing
                   ? "bg-white/10 text-white/80"
                   : "bg-white/10 text-white/60"
               }`}>
                 {isCompleted ? (
                   <CheckCircle2 className="h-3.5 w-3.5" />
+                ) : isDeclined ? (
+                  <X className="h-3.5 w-3.5" />
                 ) : isProcessing ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
@@ -377,12 +386,14 @@ export function Receipt({ transaction, type, onClose }: ReceiptProps) {
                 <div className="h-full bg-[#eaedf0] rounded-full overflow-hidden">
                   <motion.div
                     initial={{ height: "0%" }}
-                    animate={{ height: isCompleted ? "100%" : isProcessing ? "50%" : "15%" }}
+                    animate={{ height: isCompleted ? "100%" : isDeclined ? "100%" : isProcessing ? "50%" : "15%" }}
                     transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
                     className="w-full"
                     style={{
                       background: isCompleted
                         ? "linear-gradient(180deg, #003087, #0070BA, #00A651)"
+                        : isDeclined
+                        ? "linear-gradient(180deg, #003087, #0070BA, #ef4444)"
                         : "linear-gradient(180deg, #003087, #0070BA)",
                     }}
                   />
@@ -413,20 +424,20 @@ export function Receipt({ transaction, type, onClose }: ReceiptProps) {
                 <div className="absolute left-[-36px] top-0">
                   <StatusDot
                     step="processing"
-                    active={isProcessing || isCompleted}
-                    completed={isCompleted}
+                    active={isProcessing || isCompleted || isDeclined}
+                    completed={isCompleted || isDeclined}
                     processing={isProcessing}
                   />
                 </div>
-                <p className={`text-sm font-medium ${isProcessing || isCompleted ? "text-[#2c2e2f]" : "text-[#c0c3c8]"}`}>
+                <p className={`text-sm font-medium ${isProcessing || isCompleted || isDeclined ? "text-[#2c2e2f]" : "text-[#c0c3c8]"}`}>
                   Processing
                 </p>
                 <p className="text-xs text-[#8b9099]">
-                  {isProcessing ? "Verifying transaction..." : isCompleted ? "Verification complete" : "Awaiting confirmation"}
+                  {isProcessing ? "Verifying transaction..." : isCompleted ? "Verification complete" : isDeclined ? "Verification complete" : "Awaiting confirmation"}
                 </p>
               </motion.div>
 
-              {/* Complete */}
+              {/* Complete / Declined */}
               <motion.div
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -434,14 +445,27 @@ export function Receipt({ transaction, type, onClose }: ReceiptProps) {
                 className="relative"
               >
                 <div className="absolute left-[-36px] top-0">
-                  <StatusDot step="complete" active={isCompleted} completed={isCompleted} />
+                  {isDeclined ? (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                      className="w-6 h-6 rounded-full flex items-center justify-center bg-red-500"
+                    >
+                      <X className="h-4 w-4 text-white" />
+                    </motion.div>
+                  ) : (
+                    <StatusDot step="complete" active={isCompleted} completed={isCompleted} />
+                  )}
                 </div>
-                <p className={`text-sm font-medium ${isCompleted ? "text-[#2c2e2f]" : "text-[#c0c3c8]"}`}>
-                  Complete
+                <p className={`text-sm font-medium ${isCompleted ? "text-[#2c2e2f]" : isDeclined ? "text-red-600" : "text-[#c0c3c8]"}`}>
+                  {isDeclined ? statusLabel : "Complete"}
                 </p>
-                <p className={`text-xs ${isCompleted ? "text-[#00A651]" : "text-[#8b9099]"}`}>
+                <p className={`text-xs ${isCompleted ? "text-[#00A651]" : isDeclined ? "text-red-500" : "text-[#8b9099]"}`}>
                   {isCompleted
                     ? `$${transaction.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })} transferred`
+                    : isDeclined
+                    ? `Transaction ${status}. Funds refunded.`
                     : "Pending completion"}
                 </p>
               </motion.div>
