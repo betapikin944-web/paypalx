@@ -14,6 +14,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Building2, User, DollarSign } from "lucide-react";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export function WithdrawalsAdmin() {
   const { data: withdrawals, isLoading } = useAllWithdrawals();
@@ -48,11 +50,30 @@ export function WithdrawalsAdmin() {
   const handleSave = async () => {
     if (!editingId) return;
 
+    const withdrawal = withdrawals?.find(w => w.id === editingId);
+    const previousStatus = withdrawal?.status;
+
     await updateWithdrawal.mutateAsync({
       id: editingId,
       status,
       adminNotes,
     });
+
+    // If changing to declined or failed from pending, refund the user
+    if ((status === 'declined' || status === 'failed') && previousStatus === 'pending') {
+      try {
+        const { error } = await supabase.rpc('refund_withdrawal', {
+          _withdrawal_id: editingId,
+        });
+        if (error) {
+          toast.error('Status updated but refund failed: ' + error.message);
+        } else {
+          toast.success('Withdrawal declined and amount refunded');
+        }
+      } catch {
+        toast.error('Refund processing failed');
+      }
+    }
 
     setEditingId(null);
   };
