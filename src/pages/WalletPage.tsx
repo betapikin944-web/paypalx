@@ -13,12 +13,12 @@ import { format } from "date-fns";
 
 const getStatusIcon = (status: string) => {
   switch (status) {
-    case "completed":
+    case "successful":
       return <CheckCircle className="h-4 w-4 text-success" />;
-    case "rejected":
+    case "declined":
       return <XCircle className="h-4 w-4 text-destructive" />;
-    case "processing":
-      return <Loader2 className="h-4 w-4 text-primary animate-spin" />;
+    case "failed":
+      return <XCircle className="h-4 w-4 text-orange-500" />;
     default:
       return <Clock className="h-4 w-4 text-warning" />;
   }
@@ -26,12 +26,12 @@ const getStatusIcon = (status: string) => {
 
 const getStatusBadge = (status: string) => {
   switch (status) {
-    case "completed":
-      return <Badge className="bg-success/10 text-success border-success/20">Completed</Badge>;
-    case "rejected":
-      return <Badge variant="destructive">Rejected</Badge>;
-    case "processing":
-      return <Badge className="bg-primary/10 text-primary border-primary/20">Processing</Badge>;
+    case "successful":
+      return <Badge className="bg-success/10 text-success border-success/20">Successful</Badge>;
+    case "declined":
+      return <Badge variant="destructive">Declined</Badge>;
+    case "failed":
+      return <Badge className="bg-orange-100 text-orange-800 border-orange-200">Failed</Badge>;
     default:
       return <Badge className="bg-warning/10 text-warning border-warning/20">Pending</Badge>;
   }

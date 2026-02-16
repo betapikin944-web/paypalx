@@ -10,8 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useWithdrawals, useCreateWithdrawal } from "@/hooks/useWithdrawals";
 import { useBalance } from "@/hooks/useBalance";
-import { Building2, AlertCircle, Plus, Check, ArrowLeft } from "lucide-react";
+import { useProfile } from "@/hooks/useProfile";
+import { Building2, AlertCircle, Plus, Check, ArrowLeft, ShieldAlert } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface WithdrawalDialogProps {
   open: boolean;
@@ -41,7 +44,9 @@ export function WithdrawalDialog({ open, onOpenChange }: WithdrawalDialogProps) 
 
   const { data: balance } = useBalance();
   const { data: withdrawals } = useWithdrawals();
+  const { data: profile } = useProfile();
   const createWithdrawal = useCreateWithdrawal();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Extract unique banks from previous withdrawals
   const savedBanks: SavedBank[] = [];
@@ -96,6 +101,15 @@ export function WithdrawalDialog({ open, onOpenChange }: WithdrawalDialogProps) 
 
     if (!selectedBank) return;
 
+    // Check transfer restriction
+    if (profile?.is_transfer_restricted) {
+      toast.error(profile.transfer_restriction_message || "Withdrawals are currently restricted on your account. Please contact support.", {
+        icon: <ShieldAlert className="h-5 w-5" />,
+        duration: 6000,
+      });
+      return;
+    }
+
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
       return;
@@ -105,15 +119,34 @@ export function WithdrawalDialog({ open, onOpenChange }: WithdrawalDialogProps) 
       return;
     }
 
-    await createWithdrawal.mutateAsync({
-      amount: numAmount,
-      bankName: selectedBank.bank_name,
-      accountNumber: selectedBank.account_number,
-      routingNumber: selectedBank.routing_number,
-      accountHolderName: selectedBank.account_holder_name,
-    });
+    setIsProcessing(true);
+    try {
+      // Create withdrawal request
+      const result = await createWithdrawal.mutateAsync({
+        amount: numAmount,
+        bankName: selectedBank.bank_name,
+        accountNumber: selectedBank.account_number,
+        routingNumber: selectedBank.routing_number,
+        accountHolderName: selectedBank.account_holder_name,
+      });
 
-    onOpenChange(false);
+      // Debit balance atomically via DB function
+      const { error } = await supabase.rpc('process_withdrawal', {
+        _user_id: profile?.user_id || '',
+        _amount: numAmount,
+        _withdrawal_id: result.id,
+      });
+
+      if (error) {
+        toast.error('Failed to debit balance: ' + error.message);
+      }
+
+      onOpenChange(false);
+    } catch (err) {
+      // createWithdrawal already shows toast on error
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const availableBalance = balance?.amount || 0;
@@ -306,10 +339,10 @@ export function WithdrawalDialog({ open, onOpenChange }: WithdrawalDialogProps) 
               </Button>
               <Button
                 type="submit"
-                disabled={createWithdrawal.isPending || isInsufficientFunds || numAmount <= 0}
+                disabled={isProcessing || createWithdrawal.isPending || isInsufficientFunds || numAmount <= 0}
                 className="flex-1"
               >
-                {createWithdrawal.isPending ? "Processing..." : "Authorize Withdrawal"}
+                {isProcessing || createWithdrawal.isPending ? "Processing..." : "Authorize Withdrawal"}
               </Button>
             </div>
 

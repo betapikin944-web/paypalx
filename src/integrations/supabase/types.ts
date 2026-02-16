@@ -519,6 +519,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      process_withdrawal: {
+        Args: { _amount: number; _user_id: string; _withdrawal_id: string }
+        Returns: undefined
+      }
+      refund_withdrawal: {
+        Args: { _withdrawal_id: string }
+        Returns: undefined
+      }
       transfer_funds:
         | {
             Args: {
