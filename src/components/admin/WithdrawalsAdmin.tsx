@@ -59,8 +59,8 @@ export function WithdrawalsAdmin() {
       adminNotes,
     });
 
-    // If changing to declined or failed from pending, refund the user
-    if ((status === 'declined' || status === 'failed') && previousStatus === 'pending') {
+    // If changing to declined or failed from a non-refunded state, refund the user
+    if ((status === 'declined' || status === 'failed') && previousStatus !== 'declined' && previousStatus !== 'failed') {
       try {
         const { error } = await supabase.rpc('refund_withdrawal', {
           _withdrawal_id: editingId,
