@@ -27,6 +27,7 @@ const SignupPage = () => {
   const { signUp } = useAuth();
   const { toast } = useToast();
   
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -86,16 +87,18 @@ const SignupPage = () => {
         });
       }
     } else {
-      // Update preferred currency after signup
-      if (selectedCurrency !== 'USD') {
-        // Small delay to ensure profile is created by trigger
-        setTimeout(async () => {
+      // Update profile with name and currency after signup
+      setTimeout(async () => {
+        const updates: Record<string, string> = {};
+        if (fullName.trim()) updates.display_name = fullName.trim();
+        if (selectedCurrency !== 'USD') updates.preferred_currency = selectedCurrency;
+        if (Object.keys(updates).length > 0) {
           await supabase
             .from('profiles')
-            .update({ preferred_currency: selectedCurrency })
+            .update(updates)
             .eq('email', email);
-        }, 1000);
-      }
+        }
+      }, 1000);
       toast({
         title: "Account created!",
         description: "Welcome to PayPal. You're now logged in.",
@@ -145,6 +148,20 @@ const SignupPage = () => {
         <p className="text-muted-foreground mb-4">Join millions who trust PayPal for payments.</p>
 
         <form onSubmit={handleSignup} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Full Name
+            </label>
+            <Input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Enter your full name"
+              className="h-14 rounded-xl"
+              required
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
               Email address
