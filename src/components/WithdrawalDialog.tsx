@@ -15,6 +15,7 @@ import { Building2, AlertCircle, Plus, Check, ArrowLeft, ShieldAlert } from "luc
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface WithdrawalDialogProps {
   open: boolean;
@@ -46,6 +47,7 @@ export function WithdrawalDialog({ open, onOpenChange }: WithdrawalDialogProps) 
   const { data: withdrawals } = useWithdrawals();
   const { data: profile } = useProfile();
   const createWithdrawal = useCreateWithdrawal();
+  const queryClient = useQueryClient();
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Extract unique banks from previous withdrawals
@@ -139,6 +141,10 @@ export function WithdrawalDialog({ open, onOpenChange }: WithdrawalDialogProps) 
 
       if (error) {
         toast.error('Failed to debit balance: ' + error.message);
+      } else {
+        // Invalidate balance and transactions cache so UI updates
+        queryClient.invalidateQueries({ queryKey: ['balance'] });
+        queryClient.invalidateQueries({ queryKey: ['transactions'] });
       }
 
       onOpenChange(false);
