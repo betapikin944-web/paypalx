@@ -139,7 +139,7 @@ export function useUpdateWithdrawal() {
         updates.admin_notes = input.adminNotes;
       }
 
-      if (input.status === 'completed' || input.status === 'rejected') {
+      if (input.status === 'successful' || input.status === 'declined' || input.status === 'failed') {
         updates.processed_at = new Date().toISOString();
       }
 

@@ -61,12 +61,12 @@ export function WithdrawalsAdmin() {
     switch (status) {
       case "pending":
         return "bg-yellow-100 text-yellow-800";
-      case "processing":
-        return "bg-blue-100 text-blue-800";
-      case "completed":
+      case "successful":
         return "bg-green-100 text-green-800";
-      case "rejected":
+      case "declined":
         return "bg-red-100 text-red-800";
+      case "failed":
+        return "bg-orange-100 text-orange-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -101,9 +101,9 @@ export function WithdrawalsAdmin() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="processing">Processing</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
+                        <SelectItem value="successful">Successful</SelectItem>
+                        <SelectItem value="declined">Declined</SelectItem>
+                        <SelectItem value="failed">Failed</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
