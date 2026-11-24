@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { Database } from '@/integrations/supabase/types';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Eye, EyeOff, Check, Search, ChevronDown } from 'lucide-react';
@@ -89,7 +90,7 @@ const SignupPage = () => {
     } else {
       // Update profile with name and currency after signup
       setTimeout(async () => {
-        const updates: Record<string, string> = {};
+        const updates: Database['public']['Tables']['profiles']['Update'] = {};
         if (fullName.trim()) updates.display_name = fullName.trim();
         if (selectedCurrency !== 'USD') updates.preferred_currency = selectedCurrency;
         if (Object.keys(updates).length > 0) {

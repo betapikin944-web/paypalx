@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { toast } from "sonner";
 
@@ -83,7 +84,7 @@ export function useUpdateAdminPhysicalCardRequest() {
 
       const now = new Date().toISOString();
 
-      const updates: Record<string, any> = {
+      const updates: Database['public']['Tables']['physical_card_requests']['Update'] = {
         status: input.status,
         tracking_number: input.trackingNumber?.trim() ? input.trackingNumber.trim() : null,
       };

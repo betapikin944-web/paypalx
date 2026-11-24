@@ -20,26 +20,35 @@ export function useCardBalance(cardId?: string) {
   useEffect(() => {
     if (!user || !cardId) return;
 
-    const channel = supabase
-      .channel(`card-balance-${cardId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "card_balances",
-          filter: `card_id=eq.${cardId}`,
-        },
-        () => {
-          queryClient.invalidateQueries({
-            queryKey: ["cardBalance", user.id, cardId],
-          });
-        },
-      )
-      .subscribe();
+    // Unique name per subscription: supabase-js throws when a channel name is
+    // reused after subscribe(), and that error blanks the whole page.
+    const channelName = `card-balance-${cardId}-${Date.now()}`;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    try {
+      channel = supabase
+        .channel(channelName)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "card_balances",
+            filter: `card_id=eq.${cardId}`,
+          },
+          () => {
+            queryClient.invalidateQueries({
+              queryKey: ["cardBalance", user.id, cardId],
+            });
+          },
+        )
+        .subscribe();
+    } catch (err) {
+      console.warn("Card balance realtime unavailable:", err);
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [user, cardId, queryClient]);
 

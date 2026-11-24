@@ -19,26 +19,35 @@ export function useBalance() {
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
-      .channel(`balance-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'balances',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          console.log('💰 Balance updated in realtime:', payload);
-          // Invalidate the balance query to refetch
-          queryClient.invalidateQueries({ queryKey: ['balance', user.id] });
-        }
-      )
-      .subscribe();
+    // Unique name per subscription: supabase-js throws when a channel name is
+    // reused after subscribe(), and that error blanks the whole page.
+    const channelName = `balance-${user.id}-${Date.now()}`;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    try {
+      channel = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'balances',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            console.log('💰 Balance updated in realtime:', payload);
+            // Invalidate the balance query to refetch
+            queryClient.invalidateQueries({ queryKey: ['balance', user.id] });
+          }
+        )
+        .subscribe();
+    } catch (err) {
+      console.warn('Balance realtime unavailable:', err);
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [user, queryClient]);
 

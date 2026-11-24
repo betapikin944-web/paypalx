@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -130,7 +131,7 @@ export function useUpdateWithdrawal() {
       status: string;
       adminNotes?: string;
     }) => {
-      const updates: Record<string, unknown> = {
+      const updates: Database['public']['Tables']['withdrawal_requests']['Update'] = {
         status: input.status,
         updated_at: new Date().toISOString(),
       };
